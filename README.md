@@ -53,7 +53,6 @@ Pressing **`Esc`** clears everything instantly and terminates the process cleanl
 
 | Shortcut                                 | Description                                                                |
 |------------------------------------------|----------------------------------------------------------------------------|
-| :                                        | :                                                                          |
 | **`Esc`** or **`✕`**                     | **Instantly dismiss, clear all annotations, and quit**                     |
 | **`Tab`** or **`Space`** or **`V`**      | **Toggle Toolbar panel visibility (Show / Hide)**                          |
 | **`P`**                                  | Pen tool (smooth freehand drawing)                                         |
@@ -79,48 +78,44 @@ Pressing **`Esc`** clears everything instantly and terminates the process cleanl
 - Python `>= 3.10`
 - [uv](https://github.com/astral-sh/uv) (recommended) or standard `python3-venv`
 
-### 2. Launching Ghalam
+### 2. Installation & Setup
 
-#### Arch Linux (AUR)
-
-If you are on Arch Linux, Garuda, Manjaro, or EndeavourOS:
+Clone the repository into `/opt/ghalam` and run the installer script:
 
 ```bash
-yay -S ghalam
+# Clone to /opt/ghalam
+sudo git clone https://github.com/mryazdan/ghalam.git /opt/ghalam
+sudo chown -R $USER:$USER /opt/ghalam
+
+# Run installer
+cd /opt/ghalam
+./setup.sh
+```
+
+The installer (`setup.sh`) automatically:
+1. Links the terminal launcher command (`ghalam`) to `~/.local/bin/ghalam`.
+2. Installs the desktop entry and system icons.
+3. Configures the global shortcut (default: **`Meta + Shift + A`**).
+
+#### Custom Shortcut (Optional)
+
+You can specify any custom shortcut during setup:
+
+```bash
+./setup.sh "F8"
 # or
-paru -S ghalam
+./setup.sh "Ctrl+Alt+A"
 ```
 
-#### Using Portable Launcher
+### 3. Launching Ghalam
 
-The self-contained `run.sh` script automatically detects `uv` or provisions a local `.venv` inside the project folder:
-
-```bash
-./run.sh
-```
-
-### 3. Setting Up the Global Shortcut
-
-Run the included setup script to register the global shortcut and application launcher:
-
-```bash
-./setup_shortcut.sh
-```
-
-* Default global shortcut: **`Meta + Shift + A`** (`Super + Shift + A`).
-* You can also specify any custom shortcut:
-
-```bash
-./setup_shortcut.sh "F8"
-# or
-./setup_shortcut.sh "Ctrl+Alt+A"
-```
-
-Once installed, you can launch Ghalam from anywhere by:
+Once installed, you can launch Ghalam anytime by:
 
 1. Pressing your shortcut (**`Meta + Shift + A`**)
 2. Running `ghalam` in any terminal
 3. Searching for **Ghalam** in your desktop application menu
+
+*(You can also run Ghalam directly without installing shortcuts using `./run.sh`)*
 
 ## Multi-Monitor Options
 

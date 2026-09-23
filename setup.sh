@@ -9,7 +9,7 @@ BIN_DIR="$HOME/.local/bin"
 SHORTCUT="${1:-Meta+Shift+A}"
 
 echo "====================================================="
-echo "       Ghalam (قلم) - Shortcut & Desktop Setup       "
+echo "            Ghalam (قلم) - System Setup              "
 echo "====================================================="
 
 # 1. Install user icons
