@@ -2,8 +2,8 @@
 Name=Ghalam
 GenericName=Screen Annotator
 Comment=Ghalam (قلم) - Fast, elegant screen drawing & annotation tool
-Exec=/home/chief/Desktop/Projects/screen-anotator/run.sh
-Icon=/home/chief/Desktop/Projects/screen-anotator/assets/icon.png
+Exec=ghalam
+Icon=ghalam
 Terminal=false
 Type=Application
 Categories=Utility;Graphics;
