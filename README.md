@@ -31,8 +31,8 @@ Pressing **`Esc`** clears everything instantly and terminates the process cleanl
       reproduction steps.
     - **Inline Text Tool**: Click anywhere to type notes and labels with high-contrast backing.
 - **Distraction-Free & Floating Glassmorphic Toolbar**:
-    - **Hidden by default**: Starts completely clean so you can sketch immediately.
-    - **Instant toggle with `Tab` or `Space`**: Pops in a floating Obsidian dark glass card with drop shadow, visible
+    - **Visible by default & draggable**: Centered at the bottom, ready for instant tool/color picking.
+    - **Instant toggle with `Tab` or `Space`**: Quickly hide or show the floating Obsidian glass card anytime.
       and crisp across both pure white documents and dark themes.
     - Draggable anywhere across monitors.
     - Quick cycle stroke size button and mouse scroll wheel resizing.

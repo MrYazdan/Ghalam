@@ -3,9 +3,10 @@ Glassmorphic floating toolbar for Screen Annotator with premium styling.
 """
 from PyQt6.QtWidgets import (
     QWidget, QHBoxLayout, QPushButton, QButtonGroup, 
-    QFrame, QLabel, QToolTip, QGraphicsDropShadowEffect
+    QFrame, QLabel, QToolTip, QGraphicsDropShadowEffect,
+    QColorDialog
 )
-from PyQt6.QtCore import Qt, QPoint, pyqtSignal, QRectF
+from PyQt6.QtCore import Qt, QPoint, pyqtSignal, QRectF, QPointF
 from PyQt6.QtGui import (
     QColor, QCursor, QFont, QPainter, QBrush, QPen, QLinearGradient, QGuiApplication
 )
@@ -46,6 +47,141 @@ class ColorButton(QPushButton):
                     border: 2px solid #FFFFFF;
                 }}
             """)
+
+
+class CustomColorButton(QPushButton):
+    custom_color_changed = pyqtSignal(QColor)
+
+    def __init__(self, initial_color: QColor = None, parent=None):
+        super().__init__(parent)
+        self.has_custom_color = initial_color is not None
+        self.current_color = initial_color
+        self.setFixedSize(22, 22)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setCheckable(True)
+        self.update_tooltip()
+        self.toggled.connect(lambda: self.update())
+
+    def update_tooltip(self):
+        if not self.has_custom_color:
+            self.setToolTip("Pick Custom Color [8]\nClick to choose your own color")
+        else:
+            hex_code = self.current_color.name().upper()
+            self.setToolTip(f"Custom Color ({hex_code}) [8]\nClick to select, click again or right-click to change")
+
+    def set_color(self, color: QColor):
+        if color.isValid():
+            self.current_color = color
+            self.has_custom_color = True
+            self.update_tooltip()
+            self.update()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.RightButton:
+            self.pick_color()
+            event.accept()
+            return
+        elif event.button() == Qt.MouseButton.LeftButton:
+            if not self.has_custom_color or self.isChecked():
+                # First time (no color picked yet) OR clicked while already selected
+                self.pick_color()
+                event.accept()
+                return
+        super().mousePressEvent(event)
+
+    def pick_color(self):
+        initial = self.current_color if self.has_custom_color else QColor("#FF2D55")
+        dialog = QColorDialog(initial, self)
+        dialog.setWindowTitle("Ghalam - Choose Color")
+        dialog.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, False)
+        dialog.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
+        dialog.setStyleSheet("""
+            QColorDialog {
+                background-color: #161A26;
+                color: #FFFFFF;
+            }
+            QLabel {
+                color: #CBD5E1;
+                font-weight: 500;
+            }
+            QLineEdit {
+                background-color: #0F121C;
+                color: #FFFFFF;
+                border: 1px solid #334155;
+                border-radius: 6px;
+                padding: 4px 8px;
+            }
+            QPushButton {
+                background-color: #1E293B;
+                color: #FFFFFF;
+                border: 1px solid #475569;
+                border-radius: 6px;
+                padding: 6px 16px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background-color: #334155;
+                border: 1px solid #64748B;
+            }
+        """)
+        if dialog.exec():
+            chosen = dialog.selectedColor()
+            if chosen.isValid():
+                self.set_color(chosen)
+                self.setChecked(True)
+                self.custom_color_changed.emit(self.current_color)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        rect = self.rect()
+        w = rect.width()
+        h = rect.height()
+        circle_rect = QRectF(1.5, 1.5, w - 3, h - 3)
+
+        if not self.has_custom_color:
+            # Unset state: frosted glass outline with '+' icon
+            bg_color = QColor(255, 255, 255, 26) if self.underMouse() else QColor(255, 255, 255, 12)
+            painter.setBrush(QBrush(bg_color))
+            border_color = QColor(255, 255, 255, 150) if self.underMouse() else QColor(255, 255, 255, 75)
+            pen_style = Qt.PenStyle.SolidLine if self.underMouse() else Qt.PenStyle.DashLine
+            painter.setPen(QPen(border_color, 1.4, pen_style))
+            painter.drawEllipse(circle_rect)
+
+            plus_color = QColor(255, 255, 255, 240) if self.underMouse() else QColor(255, 255, 255, 175)
+            plus_pen = QPen(plus_color, 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+            painter.setPen(plus_pen)
+            cx, cy = w / 2.0, h / 2.0
+            arm = 3.5
+            painter.drawLine(QPointF(cx, cy - arm), QPointF(cx, cy + arm))
+            painter.drawLine(QPointF(cx - arm, cy), QPointF(cx + arm, cy))
+        else:
+            # Set state: filled with custom color
+            painter.setBrush(QBrush(self.current_color))
+
+            if self.isChecked():
+                painter.setPen(QPen(QColor(255, 255, 255), 2.5))
+            elif self.underMouse():
+                painter.setPen(QPen(QColor(255, 255, 255), 2.0))
+            else:
+                painter.setPen(QPen(QColor(255, 255, 255, 120), 1.5))
+
+            painter.drawEllipse(circle_rect)
+
+            # Contrast-aware '+' plus icon in center
+            r, g, b = self.current_color.red(), self.current_color.green(), self.current_color.blue()
+            luminance = 0.299 * r + 0.587 * g + 0.114 * b
+            icon_color = QColor(0, 0, 0, 190) if luminance > 165 else QColor(255, 255, 255, 230)
+
+            cx, cy = w / 2.0, h / 2.0
+            arm = 3.5
+            plus_pen = QPen(icon_color, 1.6, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+            painter.setPen(plus_pen)
+            painter.drawLine(QPointF(cx, cy - arm), QPointF(cx, cy + arm))
+            painter.drawLine(QPointF(cx - arm, cy), QPointF(cx + arm, cy))
+
+        painter.end()
 
 
 class Toolbar(QWidget):
@@ -130,6 +266,12 @@ class Toolbar(QWidget):
             self.color_group.addButton(c_btn, i)
             layout.addWidget(c_btn)
 
+        # 8th slot: Custom Color Picker button (unpicked by default)
+        self.custom_color_btn = CustomColorButton(parent=self)
+        self.color_group.addButton(self.custom_color_btn, len(PALETTE))
+        layout.addWidget(self.custom_color_btn)
+        self.custom_color_btn.custom_color_changed.connect(self.color_changed.emit)
+
         self.color_group.idClicked.connect(self._on_color_clicked)
 
         self.add_separator(layout)
@@ -191,7 +333,10 @@ class Toolbar(QWidget):
                 break
 
     def _on_color_clicked(self, color_idx):
-        if 0 <= color_idx < len(PALETTE):
+        if color_idx == len(PALETTE):
+            if self.custom_color_btn.has_custom_color:
+                self.color_changed.emit(self.custom_color_btn.current_color)
+        elif 0 <= color_idx < len(PALETTE):
             self.color_changed.emit(PALETTE[color_idx]["color"])
 
     def select_tool(self, tool_type: ToolType):
@@ -201,7 +346,13 @@ class Toolbar(QWidget):
             self.tool_changed.emit(tool_type)
 
     def select_color_by_index(self, index: int):
-        if 0 <= index < len(PALETTE):
+        if index == len(PALETTE):
+            if not self.custom_color_btn.has_custom_color:
+                self.custom_color_btn.pick_color()
+            else:
+                self.custom_color_btn.setChecked(True)
+                self.color_changed.emit(self.custom_color_btn.current_color)
+        elif 0 <= index < len(PALETTE):
             btn = self.color_group.button(index)
             if btn:
                 btn.setChecked(True)

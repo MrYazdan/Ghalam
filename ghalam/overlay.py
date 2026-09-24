@@ -49,7 +49,7 @@ class OverlayWindow(QWidget):
     def __init__(self, target_screen=None, parent=None):
         super().__init__(parent)
         self.target_screen = target_screen
-        self.toolbar_visible = False
+        self.toolbar_visible = True
         self.init_window()
         self.init_ui()
 
@@ -126,13 +126,13 @@ class OverlayWindow(QWidget):
         self.setGeometry(geom)
         self.canvas.setGeometry(0, 0, geom.width(), geom.height())
 
-        # Reposition toolbar and keep hidden by default
+        # Reposition and display toolbar by default
         self.reposition_toolbar()
-        if not self.toolbar_visible:
-            self.toolbar.hide()
-        else:
+        if self.toolbar_visible:
             self.toolbar.show()
             self.toolbar.raise_()
+        else:
+            self.toolbar.hide()
 
         self.showFullScreen()
         self.raise_()
@@ -262,8 +262,8 @@ class OverlayWindow(QWidget):
             self.toolbar.select_tool(ToolType.BADGE)
         elif key == Qt.Key.Key_C:
             self.canvas.clear_all()
-        # Number keys 1-7 for color presets
-        elif Qt.Key.Key_1 <= key <= Qt.Key.Key_7:
+        # Number keys 1-8 for color presets (8 is custom color)
+        elif Qt.Key.Key_1 <= key <= Qt.Key.Key_8:
             color_index = key - Qt.Key.Key_1
             self.toolbar.select_color_by_index(color_index)
         else:
