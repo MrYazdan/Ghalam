@@ -1,16 +1,20 @@
 """
 Glassmorphic floating toolbar for Screen Annotator with premium styling.
 """
+from PyQt6.QtCore import QPoint, QPointF, QRectF, Qt, pyqtSignal
+from PyQt6.QtGui import QBrush, QColor, QCursor, QGuiApplication, QLinearGradient, QPainter, QPen
 from PyQt6.QtWidgets import (
-    QWidget, QHBoxLayout, QPushButton, QButtonGroup, 
-    QFrame, QLabel, QToolTip, QGraphicsDropShadowEffect,
-    QColorDialog
+    QButtonGroup,
+    QColorDialog,
+    QFrame,
+    QGraphicsDropShadowEffect,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QWidget,
 )
-from PyQt6.QtCore import Qt, QPoint, pyqtSignal, QRectF, QPointF
-from PyQt6.QtGui import (
-    QColor, QCursor, QFont, QPainter, QBrush, QPen, QLinearGradient, QGuiApplication
-)
-from .config import ToolType, PALETTE, DEFAULT_STROKE_WIDTH
+
+from .config import DEFAULT_STROKE_WIDTH, PALETTE, ToolType
 
 
 class ColorButton(QPushButton):
@@ -206,7 +210,7 @@ class Toolbar(QWidget):
     def init_ui(self):
         self.setObjectName("FloatingToolbar")
         self.setWindowFlags(Qt.WindowType.SubWindow)
-        
+
         # Shadow effect for popping against any light or dark background
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(24)
@@ -298,7 +302,7 @@ class Toolbar(QWidget):
         self.clear_btn = self.create_action_btn("🗑", "Clear All (C)", self.clear_requested.emit)
         self.copy_btn = self.create_action_btn("📋", "Copy Screen (Ctrl+C)", self.copy_requested.emit)
         self.save_btn = self.create_action_btn("💾", "Save to File (Ctrl+S)", self.save_requested.emit)
-        
+
         self.close_btn = self.create_action_btn("✕", "Exit Annotator (Esc)", self.exit_requested.emit)
         self.close_btn.setObjectName("CloseBtn")
 

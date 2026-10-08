@@ -5,14 +5,14 @@ import os
 import subprocess
 import tempfile
 from datetime import datetime
-from PyQt6.QtWidgets import QWidget, QFileDialog, QApplication
-from PyQt6.QtCore import Qt, QPoint, QRect, QTimer, pyqtSignal, QEvent
-from PyQt6.QtGui import (
-    QGuiApplication, QCursor, QKeyEvent, QPainter, QImage, QPixmap
-)
-from PyQt6.QtDBus import QDBusInterface, QDBusConnection
-from .config import ToolType
+
+from PyQt6.QtCore import QEvent, Qt, QTimer, pyqtSignal
+from PyQt6.QtDBus import QDBusConnection, QDBusInterface
+from PyQt6.QtGui import QCursor, QGuiApplication, QImage, QKeyEvent, QPainter
+from PyQt6.QtWidgets import QApplication, QFileDialog, QWidget
+
 from .canvas import AnnotationCanvas
+from .config import ToolType
 from .toolbar import Toolbar
 
 

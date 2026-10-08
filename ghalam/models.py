@@ -2,9 +2,12 @@
 Drawing models representing canvas annotation elements.
 """
 import math
+
 from PyQt6.QtCore import QPointF, QRectF, Qt
-from PyQt6.QtGui import QPainter, QPen, QBrush, QColor, QFont, QPainterPath
+from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
+
 from .config import HIGHLIGHTER_ALPHA
+
 
 class DrawItem:
     def draw(self, painter: QPainter):
@@ -27,10 +30,10 @@ class StrokeItem(DrawItem):
     def draw(self, painter: QPainter):
         if not self.points:
             return
-        
+
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        
+
         pen = QPen(self.color, self.width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
         painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -222,7 +225,7 @@ class TextItem(DrawItem):
         lines = self.text.split("\n")
         line_height = metrics.lineSpacing()
         total_height = line_height * len(lines)
-        max_width = max(metrics.horizontalAdvance(l) for l in lines) if lines else 0
+        max_width = max(metrics.horizontalAdvance(line) for line in lines) if lines else 0
 
         padding = 6
         bg_rect = QRectF(

@@ -1,11 +1,12 @@
 """
 Drawing canvas widget for rendering and capturing annotation strokes.
 """
-from PyQt6.QtWidgets import QWidget, QLineEdit
-from PyQt6.QtCore import Qt, QPointF, pyqtSignal, QRect
-from PyQt6.QtGui import QPainter, QColor, QFont, QKeyEvent, QWheelEvent
-from .config import ToolType, DEFAULT_TOOL, PALETTE, DEFAULT_COLOR_INDEX, DEFAULT_STROKE_WIDTH
-from .models import DrawItem, StrokeItem, ArrowItem, RectItem, EllipseItem, BadgeItem, TextItem
+from PyQt6.QtCore import QPointF, Qt, pyqtSignal
+from PyQt6.QtGui import QColor, QFont, QPainter, QWheelEvent
+from PyQt6.QtWidgets import QLineEdit, QWidget
+
+from .config import DEFAULT_COLOR_INDEX, DEFAULT_STROKE_WIDTH, DEFAULT_TOOL, PALETTE, ToolType
+from .models import ArrowItem, BadgeItem, DrawItem, EllipseItem, RectItem, StrokeItem, TextItem
 
 
 class AnnotationCanvas(QWidget):
