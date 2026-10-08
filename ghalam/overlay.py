@@ -2,6 +2,7 @@
 Fullscreen transparent overlay window hosting the canvas and floating toolbar.
 """
 import os
+import shutil
 import subprocess
 import tempfile
 from datetime import datetime
@@ -60,6 +61,8 @@ class OverlayWindow(QWidget):
             Qt.WindowType.WindowStaysOnTopHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        self.setStyleSheet("background: transparent;")
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         if QApplication.instance():
             QApplication.instance().installEventFilter(self)
@@ -69,6 +72,13 @@ class OverlayWindow(QWidget):
 
     def event(self, event: QEvent) -> bool:
         if event.type() == QEvent.Type.KeyPress:
+            # When typing in the inline text editor, do NOT intercept Tab or any key
+            if hasattr(self, "canvas") and self.canvas.text_editor.isVisible():
+                if event.key() == Qt.Key.Key_Escape:
+                    self.canvas._commit_text()
+                    return True
+                return super().event(event)
+
             if event.key() in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab):
                 self.toggle_toolbar()
                 return True
@@ -76,13 +86,16 @@ class OverlayWindow(QWidget):
 
     def eventFilter(self, obj, event: QEvent) -> bool:
         if event.type() == QEvent.Type.KeyPress:
-            # Do not intercept if user is typing in the inline text editor
-            if hasattr(self, "canvas") and self.canvas.text_editor.isVisible() and obj == self.canvas.text_editor:
-                return super().eventFilter(obj, event)
+            # Do not intercept any shortcuts if user is typing in the inline text editor
+            if hasattr(self, "canvas") and self.canvas.text_editor.isVisible():
+                if event.key() == Qt.Key.Key_Escape:
+                    self.canvas._commit_text()
+                    return True
+                return False
 
             key = event.key()
-            # Tab, Space, or V to toggle floating toolbar
-            if key in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab, Qt.Key.Key_Space, Qt.Key.Key_V):
+            # Tab to toggle floating toolbar (Space and V removed)
+            if key in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab):
                 self.toggle_toolbar()
                 return True
             # ESC: Dismiss immediately from anywhere
@@ -134,7 +147,18 @@ class OverlayWindow(QWidget):
         else:
             self.toolbar.hide()
 
-        self.showFullScreen()
+        desktop = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+        is_gnome = "gnome" in desktop or "ubuntu" in desktop
+
+        if is_gnome:
+            # On GNOME Wayland (Mutter), xdg_toplevel.set_fullscreen disables compositor alpha blending,
+            # causing the background to render pitch black. Using show() with exact screen geometry
+            # keeps the window frameless, on top, and fully transparent without Mutter unredirection.
+            self.show()
+            self.setGeometry(geom)
+        else:
+            self.showFullScreen()
+
         self.raise_()
         self.activateWindow()
         self.setFocus()
@@ -205,6 +229,15 @@ class OverlayWindow(QWidget):
         key = event.key()
         modifiers = event.modifiers()
 
+        # If user is typing in inline text editor, do NOT trigger any shortcuts!
+        if hasattr(self, "canvas") and self.canvas.text_editor.isVisible():
+            if key == Qt.Key.Key_Escape:
+                self.canvas._commit_text()
+                event.accept()
+                return
+            super().keyPressEvent(event)
+            return
+
         # ESC: Instantly dismiss and clear everything
         if key == Qt.Key.Key_Escape:
             self.dismiss()
@@ -212,7 +245,7 @@ class OverlayWindow(QWidget):
             return
 
         # Tab: Toggle Toolbar visibility
-        if key == Qt.Key.Key_Tab:
+        if key in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab):
             self.toggle_toolbar()
             event.accept()
             return
@@ -271,7 +304,8 @@ class OverlayWindow(QWidget):
 
     def capture_composite_image(self) -> QImage:
         """
-        Captures the underlying desktop background (via spectacle on KDE Wayland)
+        Captures the underlying desktop background (via spectacle on KDE,
+        gnome-screenshot on GNOME, grim on Wayland, or grabWindow fallback)
         and composites the drawn annotations on top.
         """
         w = self.canvas.width()
@@ -285,9 +319,18 @@ class OverlayWindow(QWidget):
             self.toolbar.hide()
             QGuiApplication.processEvents()
 
-            subprocess.run([
-                "spectacle", "-b", "-n", "-m", "-o", temp_path
-            ], check=True, timeout=2.0)
+            if shutil.which("spectacle"):
+                subprocess.run([
+                    "spectacle", "-b", "-n", "-m", "-o", temp_path
+                ], check=True, timeout=2.0)
+            elif shutil.which("gnome-screenshot"):
+                subprocess.run([
+                    "gnome-screenshot", "-f", temp_path
+                ], check=True, timeout=2.0)
+            elif shutil.which("grim"):
+                subprocess.run([
+                    "grim", temp_path
+                ], check=True, timeout=2.0)
 
             if os.path.exists(temp_path):
                 bg_img = QImage(temp_path)

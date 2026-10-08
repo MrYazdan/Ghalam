@@ -6,12 +6,17 @@ import signal
 import sys
 
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor, QGuiApplication, QIcon, QPainter, QPixmap
+from PyQt6.QtGui import QColor, QGuiApplication, QIcon, QPainter, QPixmap, QSurfaceFormat
 from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from .config import SOCKET_NAME, get_asset_path
 from .overlay import OverlayWindow, get_active_screen
+
+# Configure 8-bit alpha buffer so Wayland EGL surfaces support transparency across GNOME Mutter & KDE KWin
+_surface_format = QSurfaceFormat()
+_surface_format.setAlphaBufferSize(8)
+QSurfaceFormat.setDefaultFormat(_surface_format)
 
 
 def create_tray_icon_pixmap() -> QPixmap:
