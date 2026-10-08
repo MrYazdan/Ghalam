@@ -1,9 +1,11 @@
 """
 CLI entry point for Ghalam.
 """
-import sys
-import signal
 import argparse
+import signal
+import sys
+
+from ghalam import __version__
 from ghalam.app import AnnotatorApp
 
 
@@ -11,14 +13,22 @@ def main():
     # Ensure Ctrl+C terminates immediately from terminal
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    parser = argparse.ArgumentParser(description="Ghalam (قلم) - Screen Annotator")
+    parser = argparse.ArgumentParser(
+        prog="ghalam",
+        description="Ghalam (قلم) - Fast, elegant screen drawing & annotation tool for Linux",
+    )
+    parser.add_argument(
+        "-v", "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
     parser.add_argument("--daemon", action="store_true", help="Start in background daemon mode")
     parser.add_argument("--toggle", action="store_true", help="Toggle overlay display via IPC")
     parser.add_argument("--quit", action="store_true", help="Quit running daemon instance")
     parser.add_argument(
-        "--monitor", 
-        type=str, 
-        default="active", 
+        "--monitor",
+        type=str,
+        default="active",
         help="Target monitor: 'active' (auto-detect), 'all' (both screens), 'hdmi', 'dp', or index (0, 1)"
     )
     args = parser.parse_args()

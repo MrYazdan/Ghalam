@@ -1,8 +1,20 @@
 """
 Configuration and constants for Screen Annotator.
 """
+import os
+import sys
 from enum import Enum, auto
+
 from PyQt6.QtGui import QColor
+
+
+def get_asset_path(filename: str) -> str:
+    """Returns absolute path to an asset, compatible with PyInstaller bundles."""
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        base_dir = getattr(sys, "_MEIPASS")
+    else:
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_dir, "assets", filename)
 
 class ToolType(Enum):
     PEN = auto()

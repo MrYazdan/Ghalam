@@ -4,5 +4,6 @@ __pycache__/
 build/
 dist/
 *.spec
+!ghalam.spec
 .idea/
 .vscode/

@@ -1,13 +1,16 @@
 """
 Application lifecycle, multi-monitor management, and single-instance IPC.
 """
-import sys
+import os
 import signal
-from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
-from PyQt6.QtNetwork import QLocalServer, QLocalSocket
-from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QGuiApplication
+import sys
+
 from PyQt6.QtCore import Qt, QTimer
-from .config import SOCKET_NAME
+from PyQt6.QtGui import QColor, QGuiApplication, QIcon, QPainter, QPixmap
+from PyQt6.QtNetwork import QLocalServer, QLocalSocket
+from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
+
+from .config import SOCKET_NAME, get_asset_path
 from .overlay import OverlayWindow, get_active_screen
 
 
@@ -33,6 +36,10 @@ class AnnotatorApp:
 
         self.app = QApplication.instance() or QApplication(sys.argv)
         self.app.setApplicationName("Ghalam")
+        self.app.setDesktopFileName("ghalam.desktop")
+        icon_path = get_asset_path("icon.png")
+        if os.path.exists(icon_path):
+            self.app.setWindowIcon(QIcon(icon_path))
         self.is_daemon = is_daemon
         self.monitor_target = monitor_target
 
@@ -146,8 +153,7 @@ class AnnotatorApp:
         if not QSystemTrayIcon.isSystemTrayAvailable():
             return
 
-        import os
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "icon.png")
+        icon_path = get_asset_path("icon.png")
         if os.path.exists(icon_path):
             icon = QIcon(icon_path)
         else:
