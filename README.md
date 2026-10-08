@@ -54,7 +54,7 @@ Pressing **`Esc`** clears everything instantly and terminates the process cleanl
 | Shortcut                                 | Description                                                                |
 |------------------------------------------|----------------------------------------------------------------------------|
 | **`Esc`** or **`✕`**                     | **Instantly dismiss, clear all annotations, and quit**                     |
-| **`Tab`** or **`Space`** or **`V`**      | **Toggle Toolbar panel visibility (Show / Hide)**                          |
+| **`Tab`**                                | **Toggle Toolbar panel visibility (Show / Hide)**                          |
 | **`P`**                                  | Pen tool (smooth freehand drawing)                                         |
 | **`H`**                                  | Highlighter tool (translucent marker)                                      |
 | **`A`**                                  | Arrow tool (directional pointer)                                           |
@@ -63,6 +63,7 @@ Pressing **`Esc`** clears everything instantly and terminates the process cleanl
 | **`T`**                                  | Text tool (click on canvas to type)                                        |
 | **`N`**                                  | Numbered Step Badge (1, 2, 3...)                                           |
 | **`1` – `7`**                            | Quick Color Presets (Neon Green, Cyan, Red, Yellow, Orange, Purple, White) |
+| **`8`**                                  | Custom Color Picker (select any RGB color)                                 |
 | **`Mouse Wheel`**                        | Increase / decrease brush stroke width                                     |
 | **`M`**                                  | Switch overlay between connected monitors                                  |
 | **`Ctrl + Z`**                           | Undo previous action                                                       |
@@ -77,7 +78,7 @@ Pressing **`Esc`** clears everything instantly and terminates the process cleanl
 
 #### Method 1: Instant One-Line Install (Recommended)
 
-No Python, git, or dependencies required! The installer downloads the standalone Linux binary, sets up desktop integration, application icons, and registers your global shortcut automatically:
+No Python, git, or dependencies required! The installer downloads the standalone Linux binary, sets up desktop integration, application icons, and registers your global shortcut automatically (supports **KDE Plasma** & **GNOME** / Ubuntu):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mryazdan/ghalam/main/install.sh | bash
@@ -107,14 +108,14 @@ cd /opt/ghalam
 ./setup.sh
 ```
 
-The installer (`setup.sh`) links `ghalam` to `~/.local/bin/ghalam`, registers icons and desktop launcher, and sets up your shortcut (default: **`Meta + Shift + A`**).
+The installer (`setup.sh`) links `ghalam` to `~/.local/bin/ghalam`, registers icons and desktop launcher, and sets up your shortcut (default: **`Alt + D`**).
 
 
 ### 3. Launching Ghalam
 
 Once installed, you can launch Ghalam anytime by:
 
-1. Pressing your shortcut (**`Meta + Shift + A`**)
+1. Pressing your shortcut (**`Alt + D`**)
 2. Running `ghalam` in any terminal
 3. Searching for **Ghalam** in your desktop application menu
 
