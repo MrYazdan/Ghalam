@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build Standalone Binary & Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install system dependencies for Qt bundling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 \
+            libgl1 \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-sync1 \
+            libxcb-xfixes0 \
+            libxcb-xinerama0 \
+            libxcb-xkb1
+
+      - name: Build Python packages (wheel & sdist)
+        run: |
+          uv build
+
+      - name: Build standalone Linux binary with PyInstaller
+        run: |
+          uv run --with pyinstaller pyinstaller --clean -y ghalam.spec
+
+      - name: Generate Checksums
+        run: |
+          cd dist
+          sha256sum ghalam-linux-x86_64 > ghalam-linux-x86_64.sha256
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/ghalam-linux-x86_64
+            dist/ghalam-linux-x86_64.sha256
+            dist/*.whl
+            dist/*.tar.gz
+          generate_release_notes: true
