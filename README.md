@@ -73,14 +73,29 @@ Pressing **`Esc`** clears everything instantly and terminates the process cleanl
 
 ## Getting Started
 
-### 1. Requirements
+### Installation
 
-- Python `>= 3.10`
-- [uv](https://github.com/astral-sh/uv) (recommended) or standard `python3-venv`
+#### Method 1: Instant One-Line Install (Recommended)
 
-### 2. Installation & Setup
+No Python, git, or dependencies required! The installer downloads the standalone Linux binary, sets up desktop integration, application icons, and registers your global shortcut automatically:
 
-Clone the repository into `/opt/ghalam` and run the installer script:
+```bash
+curl -fsSL https://raw.githubusercontent.com/mryazdan/ghalam/main/install.sh | bash
+```
+
+Custom shortcut or uninstallation options:
+
+```bash
+# Set a custom global shortcut (e.g. F8 or Ctrl+Alt+A)
+curl -fsSL https://raw.githubusercontent.com/mryazdan/ghalam/main/install.sh | bash -s -- --shortcut "F8"
+
+# Clean uninstall:
+curl -fsSL https://raw.githubusercontent.com/mryazdan/ghalam/main/install.sh | bash -s -- --uninstall
+```
+
+#### Method 2: Install from Source
+
+If you want to modify the code or contribute:
 
 ```bash
 # Clone to /opt/ghalam
@@ -92,20 +107,8 @@ cd /opt/ghalam
 ./setup.sh
 ```
 
-The installer (`setup.sh`) automatically:
-1. Links the terminal launcher command (`ghalam`) to `~/.local/bin/ghalam`.
-2. Installs the desktop entry and system icons.
-3. Configures the global shortcut (default: **`Meta + Shift + A`**).
+The installer (`setup.sh`) links `ghalam` to `~/.local/bin/ghalam`, registers icons and desktop launcher, and sets up your shortcut (default: **`Meta + Shift + A`**).
 
-#### Custom Shortcut (Optional)
-
-You can specify any custom shortcut during setup:
-
-```bash
-./setup.sh "F8"
-# or
-./setup.sh "Ctrl+Alt+A"
-```
 
 ### 3. Launching Ghalam
 
