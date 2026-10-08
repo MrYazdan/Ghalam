@@ -41,7 +41,7 @@ class AnnotatorApp:
 
         self.app = QApplication.instance() or QApplication(sys.argv)
         self.app.setApplicationName("Ghalam")
-        self.app.setDesktopFileName("ghalam.desktop")
+        self.app.setDesktopFileName("ghalam")
         icon_path = get_asset_path("icon.png")
         if os.path.exists(icon_path):
             self.app.setWindowIcon(QIcon(icon_path))
