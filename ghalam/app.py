@@ -11,6 +11,7 @@ from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from .config import SOCKET_NAME, get_asset_path
+from .fonts import FONT_FAMILY, load_fonts
 from .overlay import OverlayWindow, get_active_screen
 
 # Configure 8-bit alpha buffer so Wayland EGL surfaces support transparency across GNOME Mutter & KDE KWin
@@ -40,6 +41,11 @@ class AnnotatorApp:
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
         self.app = QApplication.instance() or QApplication(sys.argv)
+        # Register bundled offline fonts (Vazirmatn) and apply as the app font.
+        load_fonts()
+        app_font = self.app.font()
+        app_font.setFamily(FONT_FAMILY)
+        self.app.setFont(app_font)
         self.app.setApplicationName("Ghalam")
         self.app.setDesktopFileName("ghalam")
         icon_path = get_asset_path("icon.png")
