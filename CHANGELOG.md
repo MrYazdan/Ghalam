@@ -8,6 +8,35 @@ corresponds to a `vX.Y.Z` git tag.
 
 ---
 
+## [0.3.2] - 2026-10-23
+
+Desktop icon fixes so Ghalam shows up properly in taskbars, docks and app menus.
+
+### Added
+
+- `assets/icons/` with 16, 24, 32, 48, 64, 128, 256 and 512 px icons, generated from
+  `assets/icon.png` by `scripts/generate_icons.py`.
+
+### Changed
+
+- The application builds one multi-size `QIcon` and shares it between the window and the tray,
+  instead of handing a single 512 px file to both.
+- The drawn fallback icon is now device-pixel-ratio aware.
+- The desktop file name honours `FLATPAK_ID` when the app runs inside a Flatpak sandbox.
+
+### Fixed
+
+- The X11 window icon was empty because only one oversized icon was supplied; the set now starts
+  at 128 px, which is the size the backend exports into `_NET_WM_ICON`.
+- `ghalam.desktop` now carries `StartupWMClass=Ghalam`, so the window associates with the launcher
+  instead of showing a generic icon.
+- `install.sh`, `setup.sh` and `aur/PKGBUILD` install the full icon set into `hicolor`, no longer
+  leave a stray PNG at the theme root, and no longer refresh an icon cache directory that has no
+  `index.theme`.
+- Uninstalling removes every installed icon size, the legacy stray copy and any stale cache file.
+
+---
+
 ## [0.3.1] - 2026-10-23
 
 Documentation-only release: the project now keeps a changelog.
@@ -101,6 +130,7 @@ First public release.
 
 ---
 
+[0.3.2]: https://github.com/mryazdan/ghalam/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/mryazdan/ghalam/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/mryazdan/ghalam/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mryazdan/ghalam/compare/v0.1.0...v0.2.0
