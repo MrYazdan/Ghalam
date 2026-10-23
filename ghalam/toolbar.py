@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from .config import DEFAULT_STROKE_WIDTH, PALETTE, ToolType
+from .config import DEFAULT_STROKE_WIDTH, MONO_FONT_STACK, PALETTE, UI_FONT_STACK, ToolType
 
 
 class ColorButton(QPushButton):
@@ -387,7 +387,7 @@ class Toolbar(QWidget):
                 background-color: rgba(15, 18, 28, 0.96);
                 border: 1px solid rgba(255, 255, 255, 0.22);
                 border-radius: 20px;
-                font-family: "Vazirmatn", "DejaVu Sans", "Liberation Sans", sans-serif;
+                font-family: %(ui)s;
             }
             QLabel#DragHandle {
                 color: #00E5FF;
@@ -415,7 +415,7 @@ class Toolbar(QWidget):
                 border: 1.5px solid #FFFFFF;
             }
             QPushButton#StrokeBtn {
-                font-family: "Vazirmatn", "DejaVu Sans Mono", "Consolas", monospace;
+                font-family: %(mono)s;
                 font-size: 11px;
                 font-weight: bold;
                 color: #CBD5E1;
@@ -443,7 +443,7 @@ class Toolbar(QWidget):
                 padding: 5px 9px;
                 font-size: 12px;
             }
-        """)
+        """ % {"ui": UI_FONT_STACK, "mono": MONO_FONT_STACK})
 
     def paintEvent(self, event):
         # Custom painting ensures 100% solid, crisp glassmorphic card on any Qt platform / Wayland
