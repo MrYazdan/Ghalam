@@ -16,6 +16,18 @@ def get_asset_path(filename: str) -> str:
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_dir, "assets", filename)
 
+# ---------------------------------------------------------------------------
+# Typography
+# ---------------------------------------------------------------------------
+# Bundled open-source Persian typeface (Vazirmatn, SIL OFL 1.1), shipped offline
+# in assets/fonts/. Registered at startup by ghalam.fonts.load_fonts().
+FONT_FAMILY = "Vazirmatn"
+FONT_WEIGHTS = ("Regular", "Medium", "SemiBold", "Bold")
+
+# Cross-platform UI font stack used in stylesheets (Vazirmatn first, then native).
+UI_FONT_STACK = "'Vazirmatn', 'DejaVu Sans', 'Liberation Sans', sans-serif"
+MONO_FONT_STACK = "'Vazirmatn', 'DejaVu Sans Mono', 'Consolas', monospace"
+
 class ToolType(Enum):
     PEN = auto()
     HIGHLIGHTER = auto()
