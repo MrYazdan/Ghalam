@@ -17,6 +17,7 @@ TARGET_NAME="ghalam"
 DEFAULT_SHORTCUT="Alt+D"
 SHORTCUT="$DEFAULT_SHORTCUT"
 UNINSTALL=false
+ICON_SIZES="16 24 32 48 64 128 256 512"
 
 convert_to_gnome_shortcut() {
     local s="$1"
@@ -88,9 +89,12 @@ do_uninstall() {
 
     rm -f "${BIN_DIR}/${TARGET_NAME}"
     rm -f "${APP_DIR}/ghalam.desktop"
-    rm -f "${ICON_DIR}/ghalam.png"
-    rm -f "${ICON_DIR}/hicolor/512x512/apps/ghalam.png"
+    for size in ${ICON_SIZES}; do
+        rm -f "${ICON_DIR}/hicolor/${size}x${size}/apps/ghalam.png"
+    done
     rm -f "${ICON_DIR}/hicolor/scalable/apps/ghalam.svg"
+    rm -f "${ICON_DIR}/ghalam.png"        # stray copy left by older installers
+    rm -f "${ICON_DIR}/icon-theme.cache"  # cache built against the wrong directory
 
     if command -v kwriteconfig6 &>/dev/null; then
         kwriteconfig6 --file kglobalshortcutsrc --group services --group ghalam.desktop --delete 2>/dev/null || true
@@ -111,7 +115,6 @@ do_uninstall() {
     fi
 
     update-desktop-database "${APP_DIR}" 2>/dev/null || true
-    gtk-update-icon-cache -q -t "${ICON_DIR}" 2>/dev/null || true
 
     echo -e "${GREEN}✓ Ghalam has been completely removed from your system.${NC}"
     exit 0
@@ -151,7 +154,6 @@ fi
 # Prepare directories
 mkdir -p "${BIN_DIR}"
 mkdir -p "${APP_DIR}"
-mkdir -p "${ICON_DIR}/hicolor/512x512/apps"
 mkdir -p "${ICON_DIR}/hicolor/scalable/apps"
 
 # 2. Download standalone binary
@@ -186,13 +188,18 @@ RAW_BASE="https://raw.githubusercontent.com/${REPO}/main"
 echo -e "${BLUE}▶ Installing application icons...${NC}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
-if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/assets/icon.png" ]; then
-    cp "$SCRIPT_DIR/assets/icon.png" "${ICON_DIR}/ghalam.png"
-    cp "$SCRIPT_DIR/assets/icon.png" "${ICON_DIR}/hicolor/512x512/apps/ghalam.png"
+for size in ${ICON_SIZES}; do
+    mkdir -p "${ICON_DIR}/hicolor/${size}x${size}/apps"
+    target="${ICON_DIR}/hicolor/${size}x${size}/apps/ghalam.png"
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/assets/icons/ghalam-${size}.png" ]; then
+        cp "$SCRIPT_DIR/assets/icons/ghalam-${size}.png" "$target"
+    else
+        $DOWNLOAD_CMD "$target" "${RAW_BASE}/assets/icons/ghalam-${size}.png" 2>/dev/null || true
+    fi
+done
+if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/assets/icon.svg" ]; then
     cp "$SCRIPT_DIR/assets/icon.svg" "${ICON_DIR}/hicolor/scalable/apps/ghalam.svg"
 else
-    $DOWNLOAD_CMD "${ICON_DIR}/ghalam.png" "${RAW_BASE}/assets/icon.png" 2>/dev/null || true
-    cp "${ICON_DIR}/ghalam.png" "${ICON_DIR}/hicolor/512x512/apps/ghalam.png" 2>/dev/null || true
     $DOWNLOAD_CMD "${ICON_DIR}/hicolor/scalable/apps/ghalam.svg" "${RAW_BASE}/assets/icon.svg" 2>/dev/null || true
 fi
 echo -e "${GREEN}✓ Application icons installed.${NC}"
@@ -211,10 +218,10 @@ Type=Application
 Categories=Utility;Graphics;
 Keywords=ghalam;pen;screen;annotate;draw;highlighter;screenshot;
 StartupNotify=false
+StartupWMClass=Ghalam
 EOF
 
 update-desktop-database "${APP_DIR}" 2>/dev/null || true
-gtk-update-icon-cache -q -t "${ICON_DIR}" 2>/dev/null || true
 echo -e "${GREEN}✓ Desktop launcher installed: ${APP_DIR}/ghalam.desktop${NC}"
 
 # 5. Configure Shortcut (KDE Plasma & GNOME)

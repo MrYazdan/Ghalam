@@ -7,6 +7,7 @@ APP_DIR="$HOME/.local/share/applications"
 ICON_DIR="$HOME/.local/share/icons"
 BIN_DIR="$HOME/.local/bin"
 SHORTCUT="${1:-Alt+D}"
+ICON_SIZES="16 24 32 48 64 128 256 512"
 
 convert_to_gnome_shortcut() {
     local s="$1"
@@ -27,10 +28,12 @@ echo "====================================================="
 echo "            Ghalam (قلم) - System Setup              "
 echo "====================================================="
 
-# 1. Install user icons
-mkdir -p "$ICON_DIR" "$ICON_DIR/hicolor/512x512/apps" "$ICON_DIR/hicolor/scalable/apps"
-cp "$PROJECT_DIR/assets/icon.png" "$ICON_DIR/ghalam.png"
-cp "$PROJECT_DIR/assets/icon.png" "$ICON_DIR/hicolor/512x512/apps/ghalam.png"
+# 1. Install user icons (full hicolor set, no stray copies outside the theme tree)
+mkdir -p "$ICON_DIR/hicolor/scalable/apps"
+for size in ${ICON_SIZES}; do
+    mkdir -p "$ICON_DIR/hicolor/${size}x${size}/apps"
+    cp "$PROJECT_DIR/assets/icons/ghalam-${size}.png" "$ICON_DIR/hicolor/${size}x${size}/apps/ghalam.png"
+done
 cp "$PROJECT_DIR/assets/icon.svg" "$ICON_DIR/hicolor/scalable/apps/ghalam.svg"
 
 # 2. Symlink to ~/.local/bin/ghalam for terminal execution anywhere
@@ -46,7 +49,6 @@ sed -e "s|^Exec=.*|Exec=$BIN_DIR/ghalam|" \
     "$DESKTOP_FILE" > "$APP_DIR/ghalam.desktop"
 
 update-desktop-database "$APP_DIR" 2>/dev/null || true
-gtk-update-icon-cache -q -t "$ICON_DIR" 2>/dev/null || true
 echo "✓ Installed desktop entry to $APP_DIR/ghalam.desktop"
 
 # 4. Configure Global Shortcut (KDE Plasma & GNOME)
