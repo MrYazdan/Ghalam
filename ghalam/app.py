@@ -1,11 +1,12 @@
 """
 Application lifecycle, multi-monitor management, and single-instance IPC.
 """
+import logging
 import os
 import signal
 import sys
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QSize, Qt, QTimer
 from PyQt6.QtGui import QColor, QGuiApplication, QIcon, QPainter, QPixmap, QSurfaceFormat
 from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
@@ -14,25 +15,61 @@ from .config import SOCKET_NAME, get_asset_path
 from .fonts import FONT_FAMILY, load_fonts
 from .overlay import OverlayWindow, get_active_screen
 
+log = logging.getLogger(__name__)
+
 # Configure 8-bit alpha buffer so Wayland EGL surfaces support transparency across GNOME Mutter & KDE KWin
 _surface_format = QSurfaceFormat()
 _surface_format.setAlphaBufferSize(8)
 QSurfaceFormat.setDefaultFormat(_surface_format)
 
 
-def create_tray_icon_pixmap() -> QPixmap:
-    pixmap = QPixmap(32, 32)
+# 128 first: the X11 backend exports the first usable size into _NET_WM_ICON, and a
+# 512px-only icon leaves the window without one. Smaller and larger sizes follow.
+ICON_SIZES = (128, 64, 48, 32, 24, 16, 256, 512)
+
+
+def create_tray_icon_pixmap(size: int = 32) -> QPixmap:
+    """Draws the fallback icon (cyan disc with a star) at a device-pixel-ratio aware size."""
+    screen = QGuiApplication.primaryScreen()
+    dpr = screen.devicePixelRatio() if screen else 1.0
+    pixels = max(1, int(round(size * dpr)))
+
+    pixmap = QPixmap(pixels, pixels)
     pixmap.fill(Qt.GlobalColor.transparent)
+    pixmap.setDevicePixelRatio(dpr)
+
+    inset = max(1, pixels // 8)
     p = QPainter(pixmap)
     p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
     p.setBrush(QColor("#00E5FF"))
     p.setPen(Qt.PenStyle.NoPen)
-    p.drawEllipse(4, 4, 24, 24)
+    p.drawEllipse(inset, inset, pixels - 2 * inset, pixels - 2 * inset)
     p.setPen(QColor("#0A0E1A"))
     p.setFont(p.font())
     p.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "✦")
     p.end()
     return pixmap
+
+
+def build_window_icon() -> QIcon:
+    """
+    Builds a multi-size application icon from the bundled hicolor set.
+
+    Falls back to the drawn pixmap when the assets are missing, so a broken install still
+    shows something in the taskbar instead of nothing.
+    """
+    icon = QIcon()
+    for size in ICON_SIZES:
+        path = get_asset_path(os.path.join("icons", f"ghalam-{size}.png"))
+        if os.path.exists(path):
+            icon.addFile(path, QSize(size, size))
+
+    if icon.isNull():
+        log.warning("Bundled icon set not found under assets/icons, using the drawn fallback")
+        for size in (16, 22, 24, 32, 48, 64):
+            icon.addPixmap(create_tray_icon_pixmap(size))
+
+    return icon
 
 
 class AnnotatorApp:
@@ -47,10 +84,8 @@ class AnnotatorApp:
         app_font.setFamily(FONT_FAMILY)
         self.app.setFont(app_font)
         self.app.setApplicationName("Ghalam")
-        self.app.setDesktopFileName("ghalam")
-        icon_path = get_asset_path("icon.png")
-        if os.path.exists(icon_path):
-            self.app.setWindowIcon(QIcon(icon_path))
+        self.app.setDesktopFileName(os.environ.get("FLATPAK_ID", "ghalam"))
+        self.app.setWindowIcon(build_window_icon())
         self.is_daemon = is_daemon
         self.monitor_target = monitor_target
 
@@ -164,13 +199,7 @@ class AnnotatorApp:
         if not QSystemTrayIcon.isSystemTrayAvailable():
             return
 
-        icon_path = get_asset_path("icon.png")
-        if os.path.exists(icon_path):
-            icon = QIcon(icon_path)
-        else:
-            icon = QIcon(create_tray_icon_pixmap())
-
-        self.tray = QSystemTrayIcon(icon, self.app)
+        self.tray = QSystemTrayIcon(build_window_icon(), self.app)
         self.tray.setToolTip("Ghalam (قلم)")
 
         menu = QMenu()
