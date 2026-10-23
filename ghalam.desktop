@@ -9,3 +9,4 @@ Type=Application
 Categories=Utility;Graphics;
 Keywords=ghalam;pen;screen;annotate;draw;highlighter;screenshot;
 StartupNotify=false
+StartupWMClass=Ghalam
