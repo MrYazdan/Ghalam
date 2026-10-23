@@ -387,6 +387,7 @@ class Toolbar(QWidget):
                 background-color: rgba(15, 18, 28, 0.96);
                 border: 1px solid rgba(255, 255, 255, 0.22);
                 border-radius: 20px;
+                font-family: "Vazirmatn", "DejaVu Sans", "Liberation Sans", sans-serif;
             }
             QLabel#DragHandle {
                 color: #00E5FF;
@@ -414,7 +415,7 @@ class Toolbar(QWidget):
                 border: 1.5px solid #FFFFFF;
             }
             QPushButton#StrokeBtn {
-                font-family: 'DejaVu Sans', 'Liberation Sans', sans-serif;
+                font-family: "Vazirmatn", "DejaVu Sans Mono", "Consolas", monospace;
                 font-size: 11px;
                 font-weight: bold;
                 color: #CBD5E1;

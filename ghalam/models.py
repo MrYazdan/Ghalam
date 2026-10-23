@@ -6,7 +6,7 @@ import math
 from PyQt6.QtCore import QPointF, QRectF, Qt
 from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
 
-from .config import HIGHLIGHTER_ALPHA
+from .config import FONT_FAMILY, HIGHLIGHTER_ALPHA
 
 
 class DrawItem:
@@ -197,7 +197,7 @@ class BadgeItem(DrawItem):
         text_color = QColor(0, 0, 0) if luminance > 0.6 else QColor(255, 255, 255)
 
         painter.setPen(text_color)
-        font = QFont("Sans Serif", int(self.radius * 0.9), QFont.Weight.Bold)
+        font = QFont(FONT_FAMILY, int(self.radius * 0.9), QFont.Weight.Bold)
         painter.setFont(font)
         painter.drawText(circle_rect, Qt.AlignmentFlag.AlignCenter, str(self.number))
 
@@ -218,7 +218,7 @@ class TextItem(DrawItem):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
 
-        font = QFont("Sans Serif", self.font_size, QFont.Weight.Bold)
+        font = QFont(FONT_FAMILY, self.font_size, QFont.Weight.Bold)
         painter.setFont(font)
 
         metrics = painter.fontMetrics()
