@@ -48,6 +48,9 @@ Pressing **`Esc`** clears everything instantly and terminates the process cleanl
     - **`Ctrl + S`**: Saves the screenshot to `~/Pictures/Screenshots`.
 - **Powered by `uv`**:
     - Zero dependency setup friction; sub-millisecond start time with lockfile precision (`uv.lock`).
+- **Persian-first Typography (offline)**:
+    - Ships the open-source **Vazirmatn** font (`assets/fonts/`) and registers it at runtime, so
+      Persian and Latin annotations render beautifully with no system font install required.
 
 ## Keyboard Shortcuts
 
