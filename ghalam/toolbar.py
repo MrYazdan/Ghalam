@@ -14,7 +14,15 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from .config import DEFAULT_STROKE_WIDTH, MONO_FONT_STACK, PALETTE, UI_FONT_STACK, ToolType
+from .config import (
+    DEFAULT_COLOR_INDEX,
+    DEFAULT_STROKE_WIDTH,
+    DEFAULT_TOOL,
+    MONO_FONT_STACK,
+    PALETTE,
+    UI_FONT_STACK,
+    ToolType,
+)
 
 
 class ColorButton(QPushButton):
@@ -204,7 +212,12 @@ class Toolbar(QWidget):
         super().__init__(parent)
         self.drag_position = QPoint()
         self.current_stroke = DEFAULT_STROKE_WIDTH
+        # Mirrors of the canvas state, kept for show/hide cycles (see AnnotatorApp).
+        self.current_tool = DEFAULT_TOOL
+        self.current_color = QColor(PALETTE[DEFAULT_COLOR_INDEX]["color"])
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.tool_changed.connect(self._remember_tool)
+        self.color_changed.connect(self._remember_color)
         self.init_ui()
 
     def init_ui(self):
@@ -343,6 +356,12 @@ class Toolbar(QWidget):
         elif 0 <= color_idx < len(PALETTE):
             self.color_changed.emit(PALETTE[color_idx]["color"])
 
+    def _remember_tool(self, tool: ToolType):
+        self.current_tool = tool
+
+    def _remember_color(self, color: QColor):
+        self.current_color = QColor(color)
+
     def select_tool(self, tool_type: ToolType):
         btn = self.tool_group.button(tool_type.value)
         if btn:
@@ -361,6 +380,18 @@ class Toolbar(QWidget):
             if btn:
                 btn.setChecked(True)
                 self.color_changed.emit(PALETTE[index]["color"])
+
+    def select_color(self, color: QColor):
+        """Checks the button that matches ``color`` without emitting ``color_changed``."""
+        self.current_color = QColor(color)
+        for index, entry in enumerate(PALETTE):
+            if entry["color"] == color:
+                button = self.color_group.button(index)
+                if button:
+                    button.setChecked(True)
+                return
+        self.custom_color_btn.set_color(color)
+        self.custom_color_btn.setChecked(True)
 
     def set_stroke_width(self, width: int, emit_signal: bool = True):
         width = max(1, min(width, 40))
