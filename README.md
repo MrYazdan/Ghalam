@@ -41,7 +41,9 @@ Pressing **`Esc`** clears everything instantly and terminates the process cleanl
     - Supports heterogeneous scaling (e.g. 100% on DisplayPort + 75% on HDMI).
     - Quick monitor hopping with **`M`** or span all monitors simultaneously with `--monitor all`.
 - **Clean Termination**:
-    - Pressing **`Esc`** or the **`✕`** button cleans up memory and immediately terminates the process.
+    - Pressing **`Esc`** or the **`✕`** button clears the canvas and closes the overlay; in the default
+      one-shot mode it also terminates the process.
+    - With `--daemon`, the tray-resident process stays alive for the next shortcut press.
     - Full `Ctrl+C` (SIGINT) support in terminal.
 - **One-Click Share**:
     - **`Ctrl + C`**: Copies the composite screenshot with your annotations directly to the system clipboard.
@@ -56,7 +58,7 @@ Pressing **`Esc`** clears everything instantly and terminates the process cleanl
 
 | Shortcut                                 | Description                                                                |
 |------------------------------------------|----------------------------------------------------------------------------|
-| **`Esc`** or **`✕`**                     | **Instantly dismiss, clear all annotations, and quit**                     |
+| **`Esc`** or **`✕`**                     | **Clear annotations and dismiss the overlay (also quits without `--daemon`)** |
 | **`Tab`**                                | **Toggle Toolbar panel visibility (Show / Hide)**                          |
 | **`P`**                                  | Pen tool (smooth freehand drawing)                                         |
 | **`H`**                                  | Highlighter tool (translucent marker)                                      |
@@ -123,6 +125,23 @@ Once installed, you can launch Ghalam anytime by:
 3. Searching for **Ghalam** in your desktop application menu
 
 *(You can also run Ghalam directly without installing shortcuts using `./run.sh`)*
+
+## Daemon & Command Line
+
+Start Ghalam once with `--daemon` to keep it resident in the system tray. Every later invocation talks
+to that instance over a local socket instead of starting a second process:
+
+```bash
+ghalam --daemon       # stay resident in the tray
+ghalam                # show or raise the overlay, keeping the current drawing
+ghalam --toggle       # show when hidden, dismiss when visible
+ghalam --quit         # ask the running instance to exit
+ghalam --monitor all  # pick the target the next time the overlay is built
+```
+
+A plain `ghalam` never clears an open drawing; only `--toggle` dismisses it. If the overlay is already
+visible and `--monitor` would require rebuilding it, Ghalam reports on stderr that the target was
+ignored instead of dropping it silently.
 
 ## Multi-Monitor Options
 
