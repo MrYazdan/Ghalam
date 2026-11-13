@@ -34,6 +34,13 @@ QSurfaceFormat.setDefaultFormat(_surface_format)
 # 512px-only icon leaves the window without one. Smaller and larger sizes follow.
 ICON_SIZES = (128, 64, 48, 32, 24, 16, 256, 512)
 
+# IPC: one UTF-8 line in, one status line out. The waits are short because a local
+# socket round-trip either succeeds immediately or means no instance is listening.
+IPC_WAIT_MS = 300
+REPLY_OK = "OK"
+REPLY_MONITOR_IGNORED = "MONITOR_IGNORED"
+REPLY_ERROR = "ERROR"
+
 
 def create_tray_icon_pixmap(size: int = 32) -> QPixmap:
     """Draws the fallback icon (cyan disc with a star) at a device-pixel-ratio aware size."""
@@ -135,21 +142,40 @@ class AnnotatorApp:
 
     def _handle_client_connection(self):
         client = self.server.nextPendingConnection()
-        if client:
-            client.waitForReadyRead(200)
-            cmd = bytes(client.readAll()).decode("utf-8").strip()
-            client.disconnectFromServer()
+        if not client:
+            return
+        client.waitForReadyRead(IPC_WAIT_MS)
+        command = bytes(client.readAll()).decode("utf-8", "replace").strip()
+        client.disconnectFromServer()
+        self.handle_command(command)
 
-            if cmd in ("SHOW", "TOGGLE"):
-                if self.is_any_overlay_visible():
-                    self.dismiss_all()
-                else:
-                    self.show_overlays()
-            elif cmd == "QUIT":
-                self.app.quit()
+    def handle_command(self, command: str) -> str:
+        """Dispatches one IPC verb and returns the reply written by the caller."""
+        if command == "QUIT":
+            self.app.quit()
+            return REPLY_OK
+        if command == "SHOW":
+            if self.is_any_overlay_visible():
+                self.raise_overlays()
+            else:
+                self.show_overlays()
+            return REPLY_OK
+        if command == "TOGGLE":
+            if self.is_any_overlay_visible():
+                self.dismiss_all()
+            else:
+                self.show_overlays()
+            return REPLY_OK
+        return REPLY_ERROR
 
     def is_any_overlay_visible(self) -> bool:
         return any(ov.isVisible() for ov in self.overlays)
+
+    def raise_overlays(self):
+        """Raises and focuses the existing windows without rebuilding their canvases."""
+        for ov in self.overlays:
+            ov.raise_()
+            ov.activateWindow()
 
     def hide_overlays(self):
         """Closes every overlay without deciding whether the process should exit."""
