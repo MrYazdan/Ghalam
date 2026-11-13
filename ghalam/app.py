@@ -320,6 +320,9 @@ class AnnotatorApp:
                         src.toolbar.tool_changed.connect(dst.canvas.set_tool)
                         src.toolbar.color_changed.connect(dst.canvas.set_color)
                         src.toolbar.stroke_changed.connect(lambda w, target=dst.canvas: target.set_stroke_width(w, emit_signal=False))
+                        src.canvas.stroke_width_changed.connect(
+                            lambda w, target=dst.toolbar: target.set_stroke_width(w, emit_signal=False)
+                        )
                         src.toolbar.clear_requested.connect(dst.canvas.clear_all)
 
         for ov in self.overlays:
