@@ -1,8 +1,8 @@
 pkgbase = ghalam
 	pkgdesc = Fast, elegant screen drawing & annotation tool for Linux (KDE Plasma, Wayland & X11)
-	pkgver = 0.1.0
+	pkgver = 0.4.0
 	pkgrel = 1
-	url = https://github.com/mryazdan/ghalam
+	url = https://github.com/MrYazdan/Ghalam
 	arch = any
 	license = MIT
 	makedepends = python-build
@@ -12,7 +12,7 @@ pkgbase = ghalam
 	depends = python
 	depends = python-pyqt6
 	optdepends = spectacle: Fast background desktop capture on KDE Wayland
-	source = ghalam-0.1.0.tar.gz::https://github.com/mryazdan/ghalam/archive/refs/tags/v0.1.0.tar.gz
-	sha256sums = SKIP
+	source = ghalam-0.4.0.tar.gz::https://github.com/MrYazdan/Ghalam/archive/refs/tags/v0.4.0.tar.gz
+	sha256sums = db54f9d143096715b5b809d16277d2957a5d0f383a0fcbb9dc73a7f87e29cbf8
 
 pkgname = ghalam

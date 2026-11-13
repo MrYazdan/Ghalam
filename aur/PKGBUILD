@@ -1,10 +1,10 @@
 # Maintainer: MrYazdan <ismryazdan@gmail.com>
 pkgname=ghalam
-pkgver=0.1.0
+pkgver=0.4.0
 pkgrel=1
 pkgdesc="Fast, elegant screen drawing & annotation tool for Linux (KDE Plasma, Wayland & X11)"
 arch=('any')
-url="https://github.com/mryazdan/ghalam"
+url="https://github.com/MrYazdan/Ghalam"
 license=('MIT')
 depends=(
     'python'
@@ -20,7 +20,7 @@ makedepends=(
     'python-hatchling'
 )
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('db54f9d143096715b5b809d16277d2957a5d0f383a0fcbb9dc73a7f87e29cbf8')
 
 build() {
     cd "$srcdir/$pkgname-$pkgver"
