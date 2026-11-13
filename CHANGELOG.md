@@ -8,6 +8,66 @@ corresponds to a `vX.Y.Z` git tag.
 
 ---
 
+## [0.4.0] - 2026-11-13
+
+A trustworthy show/hide cycle: the daemon survives it, `SHOW` and `TOGGLE` mean different things,
+modal dialogs keep their own keys, and every monitor contributes the right pixels to the capture.
+
+### Added
+
+- **Bundled toolbar and tray icons**: 16 stroke-only SVGs in `assets/icons/`, rendered through
+  `QSvgRenderer` at 1x and 2x in normal, checked and hover states, so no system font is needed.
+- **Widget-free capture helpers** (`ghalam/capture.py`): tool precedence, per-output `grim`
+  commands, whole-desktop crop mapping and a compositor settle delay, all unit-tested.
+- **Floating status toast** above the toolbar, showing the full message and an icon instead of
+  overwriting the 52 px stroke button.
+- **Test harness**: `pytest` + `pytest-qt` with an offscreen `conftest.py`; 52 tests covering the
+  daemon lifecycle, IPC wire format, modal isolation, capture geometry, cross-overlay sync, icons,
+  text metrics and the toast.
+- `--monitor` is forwarded to a running daemon and either honoured or reported on stderr.
+- `TEXT_FONT_SIZE_PT` as the single annotation text size.
+
+### Changed
+
+- `SHOW` raises and focuses a visible overlay without clearing it; only `TOGGLE` hides.
+- `OverlayWindow` reports `dismiss_requested` and no longer calls `QApplication.quit()`;
+  `AnnotatorApp` is the only owner of the process lifetime and branches on `--daemon`.
+- Tool, colour and stroke width survive show/hide cycles.
+- Multi-monitor capture runs one hidden desktop pass owned by the app: `grim -o <output>` first,
+  then `spectacle -f` plus a geometric crop, then the X11 root-window grab.
+- The application-wide key filter acts only on the overlay's own widgets and yields to
+  `QApplication.activeModalWidget()`; the save dialog is now Qt's own dialog.
+- Toolbar buttons are icon-only with tooltips; the active tool and colour are mirrored in
+  `Toolbar` and restored on the next show.
+- The inline text editor uses `18pt`, matching the committed `TextItem` instead of jumping ~33%.
+- `start_server()` claims the socket only when no instance answers; a stale socket file is
+  replaced, a live one is left alone.
+
+### Fixed
+
+- `--daemon` exited on the first Esc, toolbar close or `--toggle` because `dismiss()` and
+  `closeEvent()` called `QApplication.quit()` unconditionally.
+- A plain `ghalam` while the overlay was open cleared the drawing instead of raising it.
+- Esc inside the save or colour dialog cleared every annotation and quit the process.
+- `--monitor all` composited the same screen into every overlay instead of each screen's own
+  desktop.
+- Mouse-wheel stroke changes did not reach the other overlays' toolbars.
+- `--monitor` was silently ignored when a daemon was already running.
+- Toolbar and tray glyphs depended on system fonts and could render as tofu.
+- Notification text was clipped inside the fixed-width stroke button.
+
+### Documentation
+
+- `README.md` and `README_FA.md` now document `--daemon`, `--toggle`, `--quit` and the
+  `--monitor` note, and no longer claim that Esc always terminates the process.
+
+### Tooling
+
+- `pyproject.toml`: `test` dependency group and pytest configuration; `uv.lock` refreshed.
+- `ghalam.spec`: `PyQt6.QtSvg` added to `hiddenimports` for the frozen build.
+
+---
+
 ## [0.3.2] - 2026-10-23
 
 Desktop icon fixes so Ghalam shows up properly in taskbars, docks and app menus.
@@ -130,6 +190,7 @@ First public release.
 
 ---
 
+[0.4.0]: https://github.com/mryazdan/ghalam/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/mryazdan/ghalam/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/mryazdan/ghalam/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/mryazdan/ghalam/compare/v0.2.0...v0.3.0
