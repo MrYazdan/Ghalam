@@ -22,6 +22,7 @@ from .config import (
     get_asset_path,
 )
 from .fonts import FONT_FAMILY, load_fonts
+from .icons import render_pixmap
 from .overlay import OverlayWindow, get_active_screen
 
 log = logging.getLogger(__name__)
@@ -66,9 +67,9 @@ def create_tray_icon_pixmap(size: int = 32) -> QPixmap:
     p.setBrush(QColor("#00E5FF"))
     p.setPen(Qt.PenStyle.NoPen)
     p.drawEllipse(inset, inset, pixels - 2 * inset, pixels - 2 * inset)
-    p.setPen(QColor("#0A0E1A"))
-    p.setFont(p.font())
-    p.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "✦")
+
+    star = render_pixmap("brand", "#0A0E1A", max(1, pixels // 2))
+    p.drawPixmap((pixels - star.width()) // 2, (pixels - star.height()) // 2, star)
     p.end()
     return pixmap
 

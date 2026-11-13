@@ -4,7 +4,7 @@ Fullscreen transparent overlay window hosting the canvas and floating toolbar.
 import os
 from datetime import datetime
 
-from PyQt6.QtCore import QEvent, QRect, Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import QEvent, QRect, QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtDBus import QDBusConnection, QDBusInterface
 from PyQt6.QtGui import QCursor, QGuiApplication, QImage, QKeyEvent, QPainter
 from PyQt6.QtWidgets import QApplication, QFileDialog, QWidget
@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import QApplication, QFileDialog, QWidget
 from .canvas import AnnotationCanvas
 from .capture import capture_output, image_rect_for_screen, pick_tool, settle
 from .config import ToolType
+from .icons import load_icon
 from .toolbar import Toolbar
 
 
@@ -386,7 +387,7 @@ class OverlayWindow(QWidget):
         img = self.capture_composite_image()
         clipboard = QGuiApplication.clipboard()
         clipboard.setImage(img)
-        self.show_notification("✓ Copied to clipboard!")
+        self.show_notification("Copied to clipboard!")
 
     def save_to_file(self):
         """Saves composite screenshot to Pictures directory or prompt."""
@@ -410,10 +411,21 @@ class OverlayWindow(QWidget):
 
         if file_path:
             img.save(file_path, "PNG")
-            self.show_notification(f"✓ Saved to {os.path.basename(file_path)}")
+            self.show_notification(f"Saved to {os.path.basename(file_path)}")
 
-    def show_notification(self, message: str):
-        """Displays temporary notification message on toolbar."""
-        original_text = self.toolbar.stroke_btn.text()
-        self.toolbar.stroke_btn.setText(message[:14])
-        QTimer.singleShot(1800, lambda: self.toolbar.stroke_btn.setText(original_text))
+    def show_notification(self, message: str, icon_name: str = "check"):
+        """Displays a temporary icon and message in the stroke button."""
+        button = self.toolbar.stroke_btn
+        original_text = button.text()
+        original_icon = button.icon()
+        original_size = button.iconSize()
+        button.setIcon(load_icon(icon_name, 12))
+        button.setIconSize(QSize(12, 12))
+        button.setText(message[:12])
+
+        def restore():
+            button.setText(original_text)
+            button.setIcon(original_icon)
+            button.setIconSize(original_size)
+
+        QTimer.singleShot(1800, restore)

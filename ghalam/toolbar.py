@@ -1,7 +1,7 @@
 """
 Glassmorphic floating toolbar for Screen Annotator with premium styling.
 """
-from PyQt6.QtCore import QPoint, QPointF, QRectF, Qt, pyqtSignal
+from PyQt6.QtCore import QPoint, QPointF, QRectF, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QCursor, QGuiApplication, QLinearGradient, QPainter, QPen
 from PyQt6.QtWidgets import (
     QButtonGroup,
@@ -22,6 +22,17 @@ from .config import (
     PALETTE,
     UI_FONT_STACK,
     ToolType,
+)
+from .icons import load_icon, render_pixmap
+
+TOOL_BUTTONS = (
+    (ToolType.PEN, "pen", "Pen (P)"),
+    (ToolType.HIGHLIGHTER, "highlighter", "Highlighter (H)"),
+    (ToolType.ARROW, "arrow", "Arrow (A)"),
+    (ToolType.RECTANGLE, "rectangle", "Rectangle (R)"),
+    (ToolType.ELLIPSE, "ellipse", "Circle (O)"),
+    (ToolType.TEXT, "text", "Text (T)"),
+    (ToolType.BADGE, "badge", "Step Badge (N)"),
 )
 
 
@@ -236,8 +247,9 @@ class Toolbar(QWidget):
         layout.setSpacing(6)
 
         # Drag handle / Brand icon
-        drag_handle = QLabel("✦")
+        drag_handle = QLabel()
         drag_handle.setObjectName("DragHandle")
+        drag_handle.setPixmap(render_pixmap("brand", "#00E5FF", 16))
         drag_handle.setToolTip("Drag toolbar anywhere")
         drag_handle.setCursor(QCursor(Qt.CursorShape.SizeAllCursor))
         layout.addWidget(drag_handle)
@@ -248,19 +260,11 @@ class Toolbar(QWidget):
         self.tool_group = QButtonGroup(self)
         self.tool_group.setExclusive(True)
 
-        tools = [
-            (ToolType.PEN, "✏️", "Pen (P)"),
-            (ToolType.HIGHLIGHTER, "🖍️", "Highlighter (H)"),
-            (ToolType.ARROW, "➔", "Arrow (A)"),
-            (ToolType.RECTANGLE, "▢", "Rectangle (R)"),
-            (ToolType.ELLIPSE, "○", "Circle (O)"),
-            (ToolType.TEXT, "T", "Text (T)"),
-            (ToolType.BADGE, "①", "Step Badge (N)"),
-        ]
-
-        for i, (tool_type, icon_str, tip) in enumerate(tools):
-            btn = QPushButton(icon_str)
+        for i, (tool_type, icon_name, tip) in enumerate(TOOL_BUTTONS):
+            btn = QPushButton()
             btn.setCheckable(True)
+            btn.setIcon(load_icon(icon_name))
+            btn.setIconSize(QSize(18, 18))
             btn.setFixedSize(34, 34)
             btn.setToolTip(tip)
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -304,19 +308,27 @@ class Toolbar(QWidget):
 
         # Multi-monitor switch button (only if multiple screens connected)
         if len(QGuiApplication.screens()) > 1:
-            self.monitor_btn = self.create_action_btn("🖥️", "Switch Monitor (M)", self.switch_monitor_requested.emit)
+            self.monitor_btn = self.create_action_btn(
+                "monitor", "Switch Monitor (M)", self.switch_monitor_requested.emit
+            )
             layout.addWidget(self.monitor_btn)
 
         self.add_separator(layout)
 
         # Action buttons
-        self.undo_btn = self.create_action_btn("↩", "Undo (Ctrl+Z)", self.undo_requested.emit)
-        self.redo_btn = self.create_action_btn("↪", "Redo (Ctrl+Y)", self.redo_requested.emit)
-        self.clear_btn = self.create_action_btn("🗑", "Clear All (C)", self.clear_requested.emit)
-        self.copy_btn = self.create_action_btn("📋", "Copy Screen (Ctrl+C)", self.copy_requested.emit)
-        self.save_btn = self.create_action_btn("💾", "Save to File (Ctrl+S)", self.save_requested.emit)
+        self.undo_btn = self.create_action_btn("undo", "Undo (Ctrl+Z)", self.undo_requested.emit)
+        self.redo_btn = self.create_action_btn("redo", "Redo (Ctrl+Y)", self.redo_requested.emit)
+        self.clear_btn = self.create_action_btn("clear", "Clear All (C)", self.clear_requested.emit)
+        self.copy_btn = self.create_action_btn("copy", "Copy Screen (Ctrl+C)", self.copy_requested.emit)
+        self.save_btn = self.create_action_btn("save", "Save to File (Ctrl+S)", self.save_requested.emit)
 
-        self.close_btn = self.create_action_btn("✕", "Exit Annotator (Esc)", self.exit_requested.emit)
+        self.close_btn = self.create_action_btn(
+            "close",
+            "Exit Annotator (Esc)",
+            self.exit_requested.emit,
+            off="#FF5247",
+            active="#FFFFFF",
+        )
         self.close_btn.setObjectName("CloseBtn")
 
         layout.addWidget(self.undo_btn)
@@ -335,8 +347,10 @@ class Toolbar(QWidget):
         sep.setStyleSheet("background-color: rgba(255, 255, 255, 0.18); width: 1px; margin: 4px 4px;")
         layout.addWidget(sep)
 
-    def create_action_btn(self, text, tooltip, callback):
-        btn = QPushButton(text)
+    def create_action_btn(self, icon_name, tooltip, callback, off="#FFFFFF", active=None):
+        btn = QPushButton()
+        btn.setIcon(load_icon(icon_name, off=off, active=active))
+        btn.setIconSize(QSize(18, 18))
         btn.setFixedSize(34, 34)
         btn.setToolTip(tooltip)
         btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -421,9 +435,6 @@ class Toolbar(QWidget):
                 font-family: %(ui)s;
             }
             QLabel#DragHandle {
-                color: #00E5FF;
-                font-size: 17px;
-                font-weight: bold;
                 padding: 0 4px;
             }
             QPushButton {
