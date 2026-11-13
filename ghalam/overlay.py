@@ -213,16 +213,14 @@ class OverlayWindow(QWidget):
         self.show_notification(f"Monitor {next_idx + 1}: {next_screen.name()}")
 
     def dismiss(self):
-        """Immediately clear everything and exit completely."""
+        """Reports the dismissal and closes; the owner decides whether to exit."""
         self.canvas.clear_all()
         self.dismiss_requested.emit()
         self.close()
-        QApplication.quit()
 
     def closeEvent(self, event):
-        """Ensure full application termination on window close."""
+        """Leaf close: clears the canvas and never decides the process fate."""
         self.canvas.clear_all()
-        QApplication.quit()
         event.accept()
 
     def keyPressEvent(self, event: QKeyEvent):
