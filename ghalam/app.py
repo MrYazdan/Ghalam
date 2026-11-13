@@ -123,16 +123,19 @@ class AnnotatorApp:
         self.pen_stroke = DEFAULT_STROKE_WIDTH
 
     @staticmethod
-    def send_ipc_command(command: str = "SHOW") -> bool:
-        """Sends command to existing instance if running. Returns True if connected."""
+    def send_ipc_command(command: str = "SHOW") -> str:
+        """Sends one command and returns the reply, or "" when no instance answers."""
         socket = QLocalSocket()
         socket.connectToServer(SOCKET_NAME)
-        if socket.waitForConnected(300):
-            socket.write(command.encode("utf-8"))
-            socket.waitForBytesWritten(300)
-            socket.disconnectFromServer()
-            return True
-        return False
+        if not socket.waitForConnected(IPC_WAIT_MS):
+            return ""
+        socket.write(command.encode("utf-8"))
+        socket.waitForBytesWritten(IPC_WAIT_MS)
+        reply = ""
+        if socket.waitForReadyRead(IPC_WAIT_MS):
+            reply = bytes(socket.readAll()).decode("utf-8", "replace").strip()
+        socket.disconnectFromServer()
+        return reply
 
     def start_server(self):
         QLocalServer.removeServer(SOCKET_NAME)
@@ -146,8 +149,15 @@ class AnnotatorApp:
             return
         client.waitForReadyRead(IPC_WAIT_MS)
         command = bytes(client.readAll()).decode("utf-8", "replace").strip()
+        try:
+            reply = self.handle_command(command)
+        except Exception:
+            log.exception("IPC command failed: %r", command)
+            reply = REPLY_ERROR
+        if client.state() == QLocalSocket.LocalSocketState.ConnectedState:
+            client.write(reply.encode("utf-8"))
+            client.waitForBytesWritten(IPC_WAIT_MS)
         client.disconnectFromServer()
-        self.handle_command(command)
 
     def handle_command(self, command: str) -> str:
         """Dispatches one IPC verb and returns the reply written by the caller."""

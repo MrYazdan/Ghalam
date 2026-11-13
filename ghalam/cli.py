@@ -6,7 +6,7 @@ import signal
 import sys
 
 from ghalam import __version__
-from ghalam.app import AnnotatorApp
+from ghalam.app import REPLY_ERROR, AnnotatorApp
 
 
 def main():
@@ -35,17 +35,18 @@ def main():
 
     # If --quit requested
     if args.quit:
-        if AnnotatorApp.send_ipc_command("QUIT"):
+        reply = AnnotatorApp.send_ipc_command("QUIT")
+        if reply:
             print("Sent QUIT command to running instance.")
-            sys.exit(0)
         else:
             print("No running instance found.")
-            sys.exit(0)
+        sys.exit(1 if reply == REPLY_ERROR else 0)
 
     # If --toggle requested, try sending to existing daemon first
     cmd = "TOGGLE" if args.toggle else "SHOW"
-    if AnnotatorApp.send_ipc_command(cmd):
-        sys.exit(0)
+    reply = AnnotatorApp.send_ipc_command(cmd)
+    if reply:
+        sys.exit(1 if reply == REPLY_ERROR else 0)
 
     # No existing instance running, start new app
     app = AnnotatorApp(is_daemon=args.daemon, monitor_target=args.monitor)
