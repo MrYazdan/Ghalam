@@ -143,11 +143,27 @@ class AnnotatorApp:
         socket.disconnectFromServer()
         return reply
 
-    def start_server(self):
+    def start_server(self) -> bool:
+        """Claims the IPC socket, or reports that another instance already owns it."""
+        self.server = QLocalServer()
+        if self.server.listen(SOCKET_NAME):
+            self.server.newConnection.connect(self._handle_client_connection)
+            return True
+
+        probe = QLocalSocket()
+        probe.connectToServer(SOCKET_NAME)
+        if probe.waitForConnected(IPC_WAIT_MS):
+            probe.disconnectFromServer()
+            self.server = None
+            return False
+
+        # Nothing answered: the socket file is stale, so replace it and retry once.
         QLocalServer.removeServer(SOCKET_NAME)
         self.server = QLocalServer()
-        self.server.listen(SOCKET_NAME)
-        self.server.newConnection.connect(self._handle_client_connection)
+        if self.server.listen(SOCKET_NAME):
+            self.server.newConnection.connect(self._handle_client_connection)
+            return True
+        return False
 
     def _handle_client_connection(self):
         client = self.server.nextPendingConnection()
@@ -309,7 +325,9 @@ class AnnotatorApp:
                 self.show_overlays()
 
     def run(self, start_visible: bool = True):
-        self.start_server()
+        if not self.start_server():
+            log.error("Another Ghalam instance owns the IPC socket")
+            return 1
         if self.is_daemon:
             self.setup_tray()
 
