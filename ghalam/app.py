@@ -5,12 +5,14 @@ import logging
 import os
 import signal
 import sys
+from contextlib import contextmanager
 
 from PyQt6.QtCore import QSize, Qt, QTimer
 from PyQt6.QtGui import QColor, QGuiApplication, QIcon, QPainter, QPixmap, QSurfaceFormat
 from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
+from .capture import capture_desktop, settle
 from .config import (
     DEFAULT_COLOR_INDEX,
     DEFAULT_STROKE_WIDTH,
@@ -127,6 +129,9 @@ class AnnotatorApp:
         self.pen_tool = DEFAULT_TOOL
         self.pen_color = QColor(PALETTE[DEFAULT_COLOR_INDEX]["color"])
         self.pen_stroke = DEFAULT_STROKE_WIDTH
+
+        # One whole-desktop grab is shared by every overlay in a capture pass.
+        self._desktop_shot = None
 
     @staticmethod
     def send_ipc_command(command: str = "SHOW") -> str:
@@ -247,6 +252,27 @@ class AnnotatorApp:
         overlay.toolbar.select_color(self.pen_color)
         overlay.toolbar.set_stroke_width(self.pen_stroke, emit_signal=False)
 
+    @contextmanager
+    def hidden_capture(self):
+        """Hides every overlay for one grab and restores it even when capture fails."""
+        for ov in self.overlays:
+            ov.capture_host = self
+            ov.hide()
+        settle()
+        self._desktop_shot = None
+        try:
+            yield
+        finally:
+            self._desktop_shot = None
+            for ov in self.overlays:
+                ov.show_on_screen(ov.target_screen)
+
+    def desktop_screenshot(self):
+        """Captures the whole desktop once for the current hidden pass."""
+        if self._desktop_shot is None:
+            self._desktop_shot = capture_desktop(len(QGuiApplication.screens()))
+        return self._desktop_shot
+
     def resolve_target_screens(self) -> list:
         screens = QGuiApplication.screens()
         if not screens:
@@ -279,6 +305,7 @@ class AnnotatorApp:
 
         for screen in target_screens:
             ov = OverlayWindow(target_screen=screen)
+            ov.capture_host = self
             ov.dismiss_requested.connect(self.dismiss_all)
             self.overlays.append(ov)
 

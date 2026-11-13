@@ -2,17 +2,15 @@
 Fullscreen transparent overlay window hosting the canvas and floating toolbar.
 """
 import os
-import shutil
-import subprocess
-import tempfile
 from datetime import datetime
 
-from PyQt6.QtCore import QEvent, Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import QEvent, QRect, Qt, QTimer, pyqtSignal
 from PyQt6.QtDBus import QDBusConnection, QDBusInterface
 from PyQt6.QtGui import QCursor, QGuiApplication, QImage, QKeyEvent, QPainter
 from PyQt6.QtWidgets import QApplication, QFileDialog, QWidget
 
 from .canvas import AnnotationCanvas
+from .capture import capture_output, image_rect_for_screen, pick_tool, settle
 from .config import ToolType
 from .toolbar import Toolbar
 
@@ -51,6 +49,7 @@ class OverlayWindow(QWidget):
         super().__init__(parent)
         self.target_screen = target_screen
         self.toolbar_visible = True
+        self.capture_host = None
         self.init_window()
         self.init_ui()
 
@@ -318,65 +317,69 @@ class OverlayWindow(QWidget):
 
     def capture_composite_image(self) -> QImage:
         """
-        Captures the underlying desktop background (via spectacle on KDE,
-        gnome-screenshot on GNOME, grim on Wayland, or grabWindow fallback)
-        and composites the drawn annotations on top.
+        Captures this screen's desktop and composites the annotations on top.
+
+        The host owns one hidden pass for every overlay; a standalone overlay hides
+        only itself. Both paths restore the UI even when every capture tool fails.
         """
-        w = self.canvas.width()
-        h = self.canvas.height()
-        result_img = QImage(w, h, QImage.Format.Format_ARGB32_Premultiplied)
-        result_img.fill(Qt.GlobalColor.transparent)
+        if self.capture_host is not None:
+            with self.capture_host.hidden_capture():
+                return self._composite_image()
 
-        bg_captured = False
-        temp_path = os.path.join(tempfile.gettempdir(), f"annotator_bg_{os.getpid()}.png")
+        self.hide()
+        settle()
         try:
-            self.toolbar.hide()
-            QGuiApplication.processEvents()
-
-            if shutil.which("spectacle"):
-                subprocess.run([
-                    "spectacle", "-b", "-n", "-m", "-o", temp_path
-                ], check=True, timeout=2.0)
-            elif shutil.which("gnome-screenshot"):
-                subprocess.run([
-                    "gnome-screenshot", "-f", temp_path
-                ], check=True, timeout=2.0)
-            elif shutil.which("grim"):
-                subprocess.run([
-                    "grim", temp_path
-                ], check=True, timeout=2.0)
-
-            if os.path.exists(temp_path):
-                bg_img = QImage(temp_path)
-                painter = QPainter(result_img)
-                painter.drawImage(0, 0, bg_img)
-                painter.end()
-                os.remove(temp_path)
-                bg_captured = True
-        except Exception:
-            pass
+            return self._composite_image()
         finally:
-            if self.toolbar_visible:
-                self.toolbar.show()
+            self.show_on_screen(self.target_screen)
 
-        # Universal fallback for Windows, macOS, and X11 where grabWindow(0) is natively supported
-        if not bg_captured:
-            try:
-                screen = self.windowHandle().screen() if self.windowHandle() else self.screen()
-                if screen:
-                    pix = screen.grabWindow(0)
-                    if not pix.isNull() and pix.width() > 0:
-                        painter = QPainter(result_img)
-                        painter.drawPixmap(0, 0, pix)
-                        painter.end()
-            except Exception:
-                pass
+    def _composite_image(self) -> QImage:
+        width = self.canvas.width()
+        height = self.canvas.height()
+        result = QImage(width, height, QImage.Format.Format_ARGB32_Premultiplied)
+        result.fill(Qt.GlobalColor.transparent)
 
-        painter = QPainter(result_img)
+        background = self._grab_screen()
+        if not background.isNull():
+            painter = QPainter(result)
+            painter.drawImage(QRect(0, 0, width, height), background)
+            painter.end()
+
+        painter = QPainter(result)
         self.canvas.render(painter)
         painter.end()
+        return result
 
-        return result_img
+    def _grab_screen(self) -> QImage:
+        screen = self.target_screen
+        if screen is None and self.windowHandle() is not None:
+            screen = self.windowHandle().screen()
+        if screen is None:
+            screen = self.screen()
+        if screen is None:
+            return QImage()
+
+        if pick_tool() == "grim":
+            image = capture_output(screen.name())
+            if not image.isNull():
+                return image
+
+        if self.capture_host is not None:
+            desktop = self.capture_host.desktop_screenshot()
+            if not desktop.isNull():
+                union = QRect()
+                for other in QGuiApplication.screens():
+                    union = union.united(other.geometry())
+                rect = image_rect_for_screen(screen.geometry(), union, desktop.size())
+                if not rect.isEmpty():
+                    return desktop.copy(rect)
+
+        # X11 root-window fallback. Wayland has no equivalent, so the pass ends empty.
+        if QGuiApplication.platformName() != "wayland":
+            pixmap = screen.grabWindow(0)
+            if not pixmap.isNull():
+                return pixmap.toImage()
+        return QImage()
 
     def copy_to_clipboard(self):
         """Copies composite image to system clipboard."""
@@ -402,7 +405,8 @@ class OverlayWindow(QWidget):
             "PNG Images (*.png);;All Files (*)",
             options=QFileDialog.Option.DontUseNativeDialog,
         )
-        self.toolbar.show()
+        if self.toolbar_visible:
+            self.toolbar.show()
 
         if file_path:
             img.save(file_path, "PNG")
