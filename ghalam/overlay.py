@@ -70,6 +70,10 @@ class OverlayWindow(QWidget):
     def focusNextPrevChild(self, next: bool) -> bool:
         return False
 
+    def _owns_key_target(self, obj) -> bool:
+        """True when the key target belongs to this overlay's widget tree."""
+        return obj is self or (isinstance(obj, QWidget) and self.isAncestorOf(obj))
+
     def event(self, event: QEvent) -> bool:
         if event.type() == QEvent.Type.KeyPress:
             # When typing in the inline text editor, do NOT intercept Tab or any key
@@ -77,6 +81,9 @@ class OverlayWindow(QWidget):
                 if event.key() == Qt.Key.Key_Escape:
                     self.canvas._commit_text()
                     return True
+                return super().event(event)
+
+            if QApplication.activeModalWidget() is not None:
                 return super().event(event)
 
             if event.key() in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab):
@@ -91,6 +98,10 @@ class OverlayWindow(QWidget):
                 if event.key() == Qt.Key.Key_Escape:
                     self.canvas._commit_text()
                     return True
+                return False
+
+            # Keys aimed at another overlay, or at a modal dialog, are not ours.
+            if not self._owns_key_target(obj) or QApplication.activeModalWidget() is not None:
                 return False
 
             key = event.key()
@@ -233,6 +244,11 @@ class OverlayWindow(QWidget):
                 self.canvas._commit_text()
                 event.accept()
                 return
+            super().keyPressEvent(event)
+            return
+
+        # A modal dialog owns every key while it is up.
+        if QApplication.activeModalWidget() is not None:
             super().keyPressEvent(event)
             return
 
@@ -380,7 +396,11 @@ class OverlayWindow(QWidget):
 
         self.toolbar.hide()
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Annotation", default_file, "PNG Images (*.png);;All Files (*)"
+            self,
+            "Save Annotation",
+            default_file,
+            "PNG Images (*.png);;All Files (*)",
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
         self.toolbar.show()
 
