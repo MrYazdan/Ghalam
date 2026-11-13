@@ -24,6 +24,10 @@ def get_asset_path(filename: str) -> str:
 FONT_FAMILY = "Vazirmatn"
 FONT_WEIGHTS = ("Regular", "Medium", "SemiBold", "Bold")
 
+# One point size for annotation text: the inline editor and the committed TextItem
+# resolve it against the same logical DPI, so text does not jump on commit.
+TEXT_FONT_SIZE_PT = 18
+
 # Cross-platform UI font stack used in stylesheets (Vazirmatn first, then native).
 UI_FONT_STACK = "'Vazirmatn', 'DejaVu Sans', 'Liberation Sans', sans-serif"
 MONO_FONT_STACK = "'Vazirmatn', 'DejaVu Sans Mono', 'Consolas', monospace"

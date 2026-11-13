@@ -6,7 +6,7 @@ import math
 from PyQt6.QtCore import QPointF, QRectF, Qt
 from PyQt6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
 
-from .config import FONT_FAMILY, HIGHLIGHTER_ALPHA
+from .config import FONT_FAMILY, HIGHLIGHTER_ALPHA, TEXT_FONT_SIZE_PT
 
 
 class DrawItem:
@@ -205,7 +205,7 @@ class BadgeItem(DrawItem):
 
 
 class TextItem(DrawItem):
-    def __init__(self, pos: QPointF, text: str, color: QColor, font_size: int = 18):
+    def __init__(self, pos: QPointF, text: str, color: QColor, font_size: int = TEXT_FONT_SIZE_PT):
         self.pos = pos
         self.text = text
         self.color = QColor(color)

@@ -5,7 +5,15 @@ from PyQt6.QtCore import QPointF, Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QPainter, QWheelEvent
 from PyQt6.QtWidgets import QLineEdit, QWidget
 
-from .config import DEFAULT_COLOR_INDEX, DEFAULT_STROKE_WIDTH, DEFAULT_TOOL, FONT_FAMILY, PALETTE, ToolType
+from .config import (
+    DEFAULT_COLOR_INDEX,
+    DEFAULT_STROKE_WIDTH,
+    DEFAULT_TOOL,
+    FONT_FAMILY,
+    PALETTE,
+    TEXT_FONT_SIZE_PT,
+    ToolType,
+)
 from .models import ArrowItem, BadgeItem, DrawItem, EllipseItem, RectItem, StrokeItem, TextItem
 
 
@@ -146,11 +154,11 @@ class AnnotationCanvas(QWidget):
                 border-radius: 6px;
                 padding: 4px 8px;
                 font-family: '{FONT_FAMILY}';
-                font-size: 18px;
+                font-size: {TEXT_FONT_SIZE_PT}pt;
                 font-weight: bold;
             }}
         """)
-        self.text_editor.setFont(QFont(FONT_FAMILY, 18, QFont.Weight.Bold))
+        self.text_editor.setFont(QFont(FONT_FAMILY, TEXT_FONT_SIZE_PT, QFont.Weight.Bold))
         self.text_editor.setGeometry(int(pos.x()), int(pos.y()), 260, 36)
         self.text_editor.clear()
         self.text_editor.show()
