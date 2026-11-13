@@ -11,7 +11,14 @@ from PyQt6.QtGui import QColor, QGuiApplication, QIcon, QPainter, QPixmap, QSurf
 from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
-from .config import SOCKET_NAME, get_asset_path
+from .config import (
+    DEFAULT_COLOR_INDEX,
+    DEFAULT_STROKE_WIDTH,
+    DEFAULT_TOOL,
+    PALETTE,
+    SOCKET_NAME,
+    get_asset_path,
+)
 from .fonts import FONT_FAMILY, load_fonts
 from .overlay import OverlayWindow, get_active_screen
 
@@ -103,6 +110,11 @@ class AnnotatorApp:
         self.server = None
         self.tray = None
 
+        # Pen state outlives an overlay: every show/hide cycle builds new windows.
+        self.pen_tool = DEFAULT_TOOL
+        self.pen_color = QColor(PALETTE[DEFAULT_COLOR_INDEX]["color"])
+        self.pen_stroke = DEFAULT_STROKE_WIDTH
+
     @staticmethod
     def send_ipc_command(command: str = "SHOW") -> bool:
         """Sends command to existing instance if running. Returns True if connected."""
@@ -139,12 +151,36 @@ class AnnotatorApp:
     def is_any_overlay_visible(self) -> bool:
         return any(ov.isVisible() for ov in self.overlays)
 
-    def dismiss_all(self):
+    def hide_overlays(self):
+        """Closes every overlay without deciding whether the process should exit."""
+        self._capture_pen_state()
         for ov in self.overlays:
             ov.canvas.clear_all()
             ov.close()
+
+    def dismiss_all(self):
+        """The single quit decision on the dismiss path."""
+        self.hide_overlays()
         if not self.is_daemon:
             self.app.quit()
+
+    def _capture_pen_state(self):
+        """Samples tool, colour and stroke from the window that is about to close."""
+        if not self.overlays:
+            return
+        toolbar = self.overlays[0].toolbar
+        self.pen_tool = toolbar.current_tool
+        self.pen_color = QColor(toolbar.current_color)
+        self.pen_stroke = toolbar.current_stroke
+
+    def _restore_pen_state(self, overlay: OverlayWindow):
+        """Applies the remembered state before cross-overlay wiring starts."""
+        overlay.canvas.set_tool(self.pen_tool)
+        overlay.canvas.set_color(self.pen_color)
+        overlay.canvas.set_stroke_width(self.pen_stroke, emit_signal=False)
+        overlay.toolbar.select_tool(self.pen_tool)
+        overlay.toolbar.select_color(self.pen_color)
+        overlay.toolbar.set_stroke_width(self.pen_stroke, emit_signal=False)
 
     def resolve_target_screens(self) -> list:
         screens = QGuiApplication.screens()
@@ -172,15 +208,17 @@ class AnnotatorApp:
         return [active]
 
     def show_overlays(self):
-        self.dismiss_all()
+        self.hide_overlays()
         target_screens = self.resolve_target_screens()
         self.overlays = []
 
         for screen in target_screens:
             ov = OverlayWindow(target_screen=screen)
             ov.dismiss_requested.connect(self.dismiss_all)
-            ov.toolbar.exit_requested.connect(self.dismiss_all)
             self.overlays.append(ov)
+
+        for ov in self.overlays:
+            self._restore_pen_state(ov)
 
         # Synchronize tools and colors across all overlays
         if len(self.overlays) > 1:
