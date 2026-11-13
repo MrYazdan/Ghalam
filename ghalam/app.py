@@ -42,6 +42,12 @@ REPLY_MONITOR_IGNORED = "MONITOR_IGNORED"
 REPLY_ERROR = "ERROR"
 
 
+def parse_ipc_command(raw: str) -> tuple[str, str | None]:
+    """Splits ``VERB`` or ``VERB:target`` into an upper-case verb and an optional target."""
+    command, _, target = raw.strip().partition(":")
+    return command.upper(), target.strip() or None
+
+
 def create_tray_icon_pixmap(size: int = 32) -> QPixmap:
     """Draws the fallback icon (cyan disc with a star) at a device-pixel-ratio aware size."""
     screen = QGuiApplication.primaryScreen()
@@ -148,18 +154,19 @@ class AnnotatorApp:
         if not client:
             return
         client.waitForReadyRead(IPC_WAIT_MS)
-        command = bytes(client.readAll()).decode("utf-8", "replace").strip()
+        raw = bytes(client.readAll()).decode("utf-8", "replace")
+        command, target = parse_ipc_command(raw)
         try:
-            reply = self.handle_command(command)
+            reply = self.handle_command(command, target)
         except Exception:
-            log.exception("IPC command failed: %r", command)
+            log.exception("IPC command failed: %r", raw)
             reply = REPLY_ERROR
         if client.state() == QLocalSocket.LocalSocketState.ConnectedState:
             client.write(reply.encode("utf-8"))
             client.waitForBytesWritten(IPC_WAIT_MS)
         client.disconnectFromServer()
 
-    def handle_command(self, command: str) -> str:
+    def handle_command(self, command: str, target: str | None = None) -> str:
         """Dispatches one IPC verb and returns the reply written by the caller."""
         if command == "QUIT":
             self.app.quit()
@@ -167,13 +174,19 @@ class AnnotatorApp:
         if command == "SHOW":
             if self.is_any_overlay_visible():
                 self.raise_overlays()
-            else:
-                self.show_overlays()
+                if target is not None and target.lower() != self.monitor_target.lower():
+                    return REPLY_MONITOR_IGNORED
+                return REPLY_OK
+            if target is not None:
+                self.monitor_target = target
+            self.show_overlays()
             return REPLY_OK
         if command == "TOGGLE":
             if self.is_any_overlay_visible():
                 self.dismiss_all()
             else:
+                if target is not None:
+                    self.monitor_target = target
                 self.show_overlays()
             return REPLY_OK
         return REPLY_ERROR

@@ -6,7 +6,7 @@ import signal
 import sys
 
 from ghalam import __version__
-from ghalam.app import REPLY_ERROR, AnnotatorApp
+from ghalam.app import REPLY_ERROR, REPLY_MONITOR_IGNORED, AnnotatorApp
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
     parser.add_argument(
         "--monitor",
         type=str,
-        default="active",
+        default=None,
         help="Target monitor: 'active' (auto-detect), 'all' (both screens), 'hdmi', 'dp', or index (0, 1)"
     )
     args = parser.parse_args()
@@ -44,12 +44,18 @@ def main():
 
     # If --toggle requested, try sending to existing daemon first
     cmd = "TOGGLE" if args.toggle else "SHOW"
-    reply = AnnotatorApp.send_ipc_command(cmd)
+    payload = cmd if args.monitor is None else f"{cmd}:{args.monitor}"
+    reply = AnnotatorApp.send_ipc_command(payload)
     if reply:
+        if reply == REPLY_MONITOR_IGNORED:
+            print(
+                "note: --monitor ignored, an instance is already running",
+                file=sys.stderr,
+            )
         sys.exit(1 if reply == REPLY_ERROR else 0)
 
     # No existing instance running, start new app
-    app = AnnotatorApp(is_daemon=args.daemon, monitor_target=args.monitor)
+    app = AnnotatorApp(is_daemon=args.daemon, monitor_target=args.monitor or "active")
     start_visible = not args.daemon
     sys.exit(app.run(start_visible=start_visible))
 
