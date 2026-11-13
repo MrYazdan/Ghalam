@@ -4,15 +4,15 @@ Fullscreen transparent overlay window hosting the canvas and floating toolbar.
 import os
 from datetime import datetime
 
-from PyQt6.QtCore import QEvent, QRect, QSize, Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import QEvent, QRect, Qt, QTimer, pyqtSignal
 from PyQt6.QtDBus import QDBusConnection, QDBusInterface
 from PyQt6.QtGui import QCursor, QGuiApplication, QImage, QKeyEvent, QPainter
-from PyQt6.QtWidgets import QApplication, QFileDialog, QWidget
+from PyQt6.QtWidgets import QApplication, QFileDialog, QFrame, QHBoxLayout, QLabel, QWidget
 
 from .canvas import AnnotationCanvas
 from .capture import capture_output, image_rect_for_screen, pick_tool, settle
-from .config import ToolType
-from .icons import load_icon
+from .config import UI_FONT_STACK, ToolType
+from .icons import render_pixmap
 from .toolbar import Toolbar
 
 
@@ -123,6 +123,9 @@ class OverlayWindow(QWidget):
         # Floating glassmorphic toolbar
         self.toolbar = Toolbar(self)
 
+        # Short-lived status toast, independent of the fixed-width toolbar buttons
+        self.init_toast()
+
         # Wire signals between toolbar and canvas
         self.toolbar.tool_changed.connect(self.canvas.set_tool)
         self.toolbar.color_changed.connect(self.canvas.set_color)
@@ -136,6 +139,51 @@ class OverlayWindow(QWidget):
         self.toolbar.copy_requested.connect(self.copy_to_clipboard)
         self.toolbar.save_requested.connect(self.save_to_file)
         self.toolbar.exit_requested.connect(self.dismiss)
+
+    def init_toast(self):
+        """Builds the floating status label used by ``show_notification``."""
+        self.toast = QFrame(self)
+        self.toast.setObjectName("Toast")
+        self.toast.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.toast.setStyleSheet(
+            f"""
+            QFrame#Toast {{
+                background-color: rgba(15, 18, 28, 0.96);
+                border: 1px solid rgba(255, 255, 255, 0.22);
+                border-radius: 12px;
+            }}
+            QLabel#ToastText {{
+                color: #FFFFFF;
+                font-family: {UI_FONT_STACK};
+                font-size: 12px;
+                font-weight: 600;
+            }}
+            """
+        )
+        layout = QHBoxLayout(self.toast)
+        layout.setContentsMargins(12, 7, 14, 7)
+        layout.setSpacing(8)
+        self.toast_icon = QLabel()
+        self.toast_icon.setFixedSize(16, 16)
+        self.toast_text = QLabel()
+        self.toast_text.setObjectName("ToastText")
+        layout.addWidget(self.toast_icon)
+        layout.addWidget(self.toast_text)
+        self.toast.hide()
+
+        self.toast_timer = QTimer(self)
+        self.toast_timer.setSingleShot(True)
+        self.toast_timer.timeout.connect(self.toast.hide)
+
+    def position_toast(self):
+        """Centers the toast above the toolbar and keeps it inside the overlay."""
+        self.toast.adjustSize()
+        x = (self.width() - self.toast.width()) // 2
+        if self.toolbar.isVisible():
+            y = self.toolbar.y() - self.toast.height() - 12
+        else:
+            y = self.height() - self.toast.height() - 47
+        self.toast.move(max(0, x), max(0, y))
 
     def show_on_screen(self, target_screen):
         """Displays overlay specifically on target_screen with proper Wayland output mapping."""
@@ -184,6 +232,8 @@ class OverlayWindow(QWidget):
         tb_x = (geom.width() - tb_width) // 2
         tb_y = geom.height() - tb_height - 35
         self.toolbar.setGeometry(tb_x, tb_y, tb_width, tb_height)
+        if self.toast.isVisible():
+            self.position_toast()
 
     def toggle_toolbar(self):
         """Toggles floating toolbar visibility on/off (Tab key)."""
@@ -195,6 +245,8 @@ class OverlayWindow(QWidget):
             self.toolbar.show()
             self.toolbar.raise_()
             self.toolbar_visible = True
+            if self.toast.isVisible():
+                self.position_toast()
 
     def show_on_active_screen(self):
         """Displays overlay on currently active monitor."""
@@ -414,18 +466,10 @@ class OverlayWindow(QWidget):
             self.show_notification(f"Saved to {os.path.basename(file_path)}")
 
     def show_notification(self, message: str, icon_name: str = "check"):
-        """Displays a temporary icon and message in the stroke button."""
-        button = self.toolbar.stroke_btn
-        original_text = button.text()
-        original_icon = button.icon()
-        original_size = button.iconSize()
-        button.setIcon(load_icon(icon_name, 12))
-        button.setIconSize(QSize(12, 12))
-        button.setText(message[:12])
-
-        def restore():
-            button.setText(original_text)
-            button.setIcon(original_icon)
-            button.setIconSize(original_size)
-
-        QTimer.singleShot(1800, restore)
+        """Shows a short-lived floating status message above the toolbar."""
+        self.toast_icon.setPixmap(render_pixmap(icon_name, "#00E5FF", 16))
+        self.toast_text.setText(message)
+        self.position_toast()
+        self.toast.show()
+        self.toast.raise_()
+        self.toast_timer.start(1800)
